@@ -62,9 +62,9 @@ def find_level_flight_trim(
     # Initial guess for optimization variables
     if initial_guess is None:
         initial_guess = {
-            'alpha': np.radians(15),   # angle of attack (need high alpha for lift)
-            'theta': np.radians(15),   # pitch angle
-            'throttle': 0.4,           # throttle setting
+            'alpha': np.radians(2),    # angle of attack
+            'theta': np.radians(2),    # pitch angle
+            'throttle': 0.3,           # throttle setting
             'elevator': 0.0,           # elevator deflection
         }
 
@@ -159,19 +159,20 @@ def find_level_flight_trim(
         return residuals
 
     # Bounds for optimization variables
+    # Note: For level flight, theta ≈ alpha (small flight path angle)
     bounds = (
-        [np.radians(0), np.radians(0), 0.0, np.radians(-20)],    # Lower bounds
-        [np.radians(30), np.radians(30), 1.0, np.radians(20)]    # Upper bounds
+        [np.radians(-2), np.radians(-2), 0.01, np.radians(-20)],    # Lower bounds
+        [np.radians(20), np.radians(20), 1.0, np.radians(20)]       # Upper bounds
     )
 
-    # Solve
+    # Solve with relaxed tolerances and more iterations
     result = least_squares(
         residuals,
         x0,
         bounds=bounds,
-        ftol=1e-8,
-        xtol=1e-8,
-        max_nfev=1000,
+        ftol=1e-6,      # Relaxed from 1e-8
+        xtol=1e-6,      # Relaxed from 1e-8
+        max_nfev=2000,  # Increased from 1000
         verbose=0
     )
 
