@@ -1,0 +1,32 @@
+ ---------------------------------------------------------------
+ Vortex Lattice Output -- Total Forces
+
+ Configuration: nTop_FlyingWing                                             
+     # Surfaces =   2
+     # Strips   =  40
+     # Vortices = 800
+
+  Sref =  412.64       Cref =  11.956       Bref =  24.863    
+  Xref =  12.846       Yref =-0.60000E-03   Zref = 0.43700E-01
+
+ Standard axis orientation,  X fwd, Z down         
+
+ Run case:  -unnamed-                              
+
+  Alpha =   2.00000     pb/2V =  -0.00000     p'b/2V =  -0.00000
+  Beta  =   0.00000     qc/2V =   0.00000
+  Mach  =     0.000     rb/2V =  -0.00000     r'b/2V =  -0.00000
+
+  CXtot =   0.00065     Cltot =  -0.00770     Cl'tot =  -0.00768
+  CYtot =  -0.00217     Cmtot =  -0.00268
+  CZtot =  -0.04930     Cntot =   0.00028     Cn'tot =   0.00054
+
+  CLtot =   0.04929
+  CDtot =   0.00107
+  CDvis =   0.00000     CDind = 0.0010703
+  CLff  =   0.04931     CDff  = 0.0009713    | Trefftz
+  CYff  =  -0.00250         e =    0.5332    | Plane  
+
+   elevon          =   5.00000
+
+ ---------------------------------------------------------------
