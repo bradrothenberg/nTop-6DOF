@@ -221,8 +221,8 @@ def main():
     # Set up plotting style
     setup_plotting_style()
 
-    # Run simulation
-    results = simulate_maneuver(duration=60.0, dt=0.1)
+    # Run simulation (using default dt=0.01 for stability)
+    results = simulate_maneuver(duration=60.0)
 
     print("Creating visualizations...")
     print()
