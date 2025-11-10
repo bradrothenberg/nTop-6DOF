@@ -98,6 +98,32 @@ A production-ready Python framework for 6-degree-of-freedom (6-DOF) flight dynam
    - ✅ Gain and phase margin calculation
    - ✅ Transfer function utilities
 
+### Phase 5: I/O and Configuration ✅ (COMPLETED)
+
+**Completed Components:**
+
+1. **YAML Configuration System** ([src/io/config.py](src/io/config.py))
+   - ✅ AircraftConfig class for structured aircraft definitions
+   - ✅ Load/save aircraft configurations from YAML
+   - ✅ Automatic model creation from config
+   - ✅ Support for multiple aerodynamic model types
+   - ✅ Support for multiple propulsion model types
+   - ✅ Initial state configuration
+
+2. **AVL Output Parsers** ([src/io/avl_parser.py](src/io/avl_parser.py))
+   - ✅ Parse AVL stability derivatives (.st files)
+   - ✅ Parse AVL forces and moments (.ft files)
+   - ✅ Parse AVL run cases (.run files)
+   - ✅ Parse AVL mass files (.mass files)
+   - ✅ Extract stability derivatives from console output
+
+3. **Example Configurations** ([config/](config/))
+   - ✅ nTop UAV configuration (ntop_uav.yaml)
+   - ✅ Complete mass, inertia, reference geometry
+   - ✅ Stability and control derivatives
+   - ✅ Propulsion parameters
+   - ✅ Initial state definitions
+
 ---
 
 ### Phase 1: AVL Geometry Generation & Validation ✅ (COMPLETED)
@@ -346,13 +372,14 @@ All phases have comprehensive test suites:
 - **Phase 2 Tests** ([tests/test_phase2.py](tests/test_phase2.py)): 23 tests for 6-DOF dynamics
 - **Phase 3 Tests** ([tests/test_phase3.py](tests/test_phase3.py)): 22 tests for supporting systems
 - **Phase 4 Tests** ([tests/test_phase4.py](tests/test_phase4.py)): 11 tests for analysis tools
+- **Phase 5 Tests** ([tests/test_phase5.py](tests/test_phase5.py)): 17 tests for I/O and configuration
 
 Run all tests:
 ```bash
 pytest tests/ -v
 ```
 
-Total: **67 passing tests**
+Total: **84 passing tests**
 
 ---
 
@@ -375,6 +402,12 @@ Demonstrates altitude hold, heading hold, and airspeed hold autopilots with stan
 python examples/stability_analysis_demo.py
 ```
 Demonstrates linearization, eigenvalue analysis, mode identification, and frequency response (Bode plots, step responses).
+
+### Phase 5: Configuration System
+```bash
+python examples/config_demo.py
+```
+Demonstrates YAML-based aircraft configuration, automatic model creation, initial state setup, and configuration save/load.
 
 ---
 
@@ -404,22 +437,26 @@ nTop6DOF/
 │   │   ├── avl_run_cases.py    # ✅ Run case generator
 │   │   ├── avl_database.py     # ✅ AVL data interpolation
 │   │   └── xfoil_interface.py  # TODO
-│   ├── io/
+│   ├── io/                 # ✅ I/O and configuration
+│   │   ├── config.py           # ✅ YAML configuration system
+│   │   ├── avl_parser.py       # ✅ AVL output parsers
 │   │   ├── geometry.py         # ✅ LE/TE CSV parser
 │   │   └── mass_properties.py  # ✅ Mass converter
-│   ├── propulsion/             # TODO (advanced models)
-│   ├── analysis/               # TODO
 │   └── visualization/          # TODO
 ├── tests/
 │   ├── test_phase1.py          # ✅ Phase 1 tests (11 tests)
 │   ├── test_phase2.py          # ✅ Phase 2 tests (23 tests)
 │   ├── test_phase3.py          # ✅ Phase 3 tests (22 tests)
-│   └── test_phase4.py          # ✅ Phase 4 tests (11 tests)
+│   ├── test_phase4.py          # ✅ Phase 4 tests (11 tests)
+│   └── test_phase5.py          # ✅ Phase 5 tests (17 tests)
 ├── examples/
 │   ├── simple_6dof_sim.py      # ✅ Basic 6-DOF simulation
 │   ├── autopilot_demo.py       # ✅ Autopilot demonstration
-│   └── stability_analysis_demo.py  # ✅ Stability analysis
-├── config/                     # TODO
+│   ├── stability_analysis_demo.py  # ✅ Stability analysis
+│   └── config_demo.py          # ✅ Configuration system
+├── config/                     # ✅ Configuration files
+│   ├── ntop_uav.yaml           # ✅ nTop UAV configuration
+│   └── example_aircraft.yaml   # ✅ Example configuration
 ├── Data/
 │   ├── LEpts.csv              # ✅ Wing LE points (from nTop)
 │   ├── TEpts.csv              # ✅ Wing TE points (from nTop)
@@ -440,32 +477,31 @@ nTop6DOF/
 
 ---
 
-## Next Steps (Phase 5 & Beyond)
+## Next Steps (Phase 6 & Beyond)
 
-### Phase 5: I/O and Configuration (Planned)
-1. **Configuration Files**
-   - YAML-based aircraft definitions
-   - Easy aircraft setup from config files
-   - Parameter sweeps and batch analysis
-2. **File Parsers**
-   - Enhanced AVL output parsing
-   - XFOIL polar integration
-   - Export/import utilities
+### Phase 6: Visualization (Planned)
+1. **Real-time Flight Visualization**
+   - 3D aircraft animation
+   - Flight path plotting
+   - State variable time histories
+   - Interactive parameter adjustment
+2. **Analysis Visualization**
+   - Mode shape visualization
+   - Frequency response plots (Bode, Nyquist)
+   - Trim map generation
+   - V-n diagrams
 
 ### Medium Term:
 - XFOIL integration for 2D airfoil polars
-- Simple propulsion model
-- Basic autopilot (PID altitude/heading hold)
-- Linearization & stability analysis
-- Eigenmode analysis (phugoid, short period, Dutch roll, etc.)
+- Advanced propulsion models (turbofan, turbojet)
+- Advanced control laws (LQR, MPC)
+- Optimization interface for design studies
 
 ### Long Term:
-- nTop workflow automation
-- Parametric design sweeps
-- Optimization interface
-- Wind/turbulence models
-- Advanced control laws
-- Real-time visualization
+- nTop workflow automation and parametric design sweeps
+- Wind/turbulence models and atmospheric disturbances
+- Hardware-in-the-loop (HIL) testing
+- Real-time flight control system integration
 
 ---
 
@@ -527,6 +563,6 @@ Internal nTop project - not for external distribution.
 ---
 
 **Last Updated**: 2025-01-10
-**Status**: Phases 1, 2, 3, 4 Complete - Core Framework with Analysis Tools
-**Version**: 0.4.0-alpha
-**Test Coverage**: 67 passing tests across 4 phases
+**Status**: Phases 1-5 Complete - Full Framework with Configuration System
+**Version**: 0.5.0-alpha
+**Test Coverage**: 84 passing tests across 5 phases
