@@ -75,7 +75,7 @@ class ConstantThrustModel(PropulsionModel):
     def compute_thrust(self, state: State, throttle: float = 1.0) -> Tuple[np.ndarray, np.ndarray]:
         """Compute constant thrust."""
         # Thrust along body x-axis
-        forces = np.array([self.thrust * throttle, 0.0, 0.0])
+        forces = np.hstack([self.thrust * throttle, 0.0, 0.0])
 
         # Moments due to thrust offset
         moments = np.cross(self.thrust_offset, forces)
@@ -126,7 +126,7 @@ class ThrottleDependentThrust(PropulsionModel):
             thrust *= (1.0 - self.velocity_factor * min(V / self.V_max, 1.0))
 
         # Thrust along body x-axis
-        forces = np.array([thrust, 0.0, 0.0])
+        forces = np.hstack([thrust, 0.0, 0.0])
 
         # Moments due to thrust offset
         moments = np.cross(self.thrust_offset, forces)
@@ -189,7 +189,7 @@ class PropellerModel(PropulsionModel):
         thrust = min(thrust, 2.0 * self.power_max)  # Reasonable upper bound
 
         # Thrust along body x-axis
-        forces = np.array([thrust, 0.0, 0.0])
+        forces = np.hstack([thrust, 0.0, 0.0])
 
         # Moments due to thrust offset
         moments = np.cross(self.thrust_offset, forces)

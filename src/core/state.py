@@ -11,6 +11,8 @@ State includes:
 import numpy as np
 from typing import Tuple
 
+from archimedes import struct, field
+
 # Handle imports for both package and standalone usage
 try:
     from .quaternion import Quaternion
@@ -18,6 +20,7 @@ except ImportError:
     from quaternion import Quaternion
 
 
+@struct(frozen=False)
 class State:
     """
     Complete 6-DOF aircraft state vector.
@@ -29,30 +32,28 @@ class State:
     - Angular rates: p, q, r (body frame, rad/s)
     """
 
-    def __init__(self):
-        """Initialize state to default values (straight and level)."""
-        # Position in NED frame (ft)
-        self.x_n = 0.0  # North
-        self.y_n = 0.0  # East
-        self.z_n = 0.0  # Down (negative altitude)
+    # Position in NED frame (ft)
+    x_n: float = 0.0  # North
+    y_n: float = 0.0  # East
+    z_n: float = 0.0  # Down (negative altitude)
 
-        # Velocity in body frame (ft/s)
-        self.u = 0.0  # Forward velocity
-        self.v = 0.0  # Side velocity
-        self.w = 0.0  # Vertical velocity
+    # Velocity in body frame (ft/s)
+    u: float = 0.0  # Forward velocity
+    v: float = 0.0  # Side velocity
+    w: float = 0.0  # Vertical velocity
 
-        # Attitude quaternion (inertial to body)
-        self.q = Quaternion()  # Identity (no rotation)
+    # Attitude quaternion (inertial to body)
+    q: Quaternion = field(default_factory=Quaternion)  # Identity (no rotation)
 
-        # Angular rates in body frame (rad/s)
-        self.p = 0.0  # Roll rate
-        self.q_rate = 0.0  # Pitch rate
-        self.r = 0.0  # Yaw rate
+    # Angular rates in body frame (rad/s)
+    p: float = 0.0  # Roll rate
+    q_rate: float = 0.0  # Pitch rate
+    r: float = 0.0  # Yaw rate
 
     @property
     def position(self) -> np.ndarray:
         """Get position vector in NED frame (ft)."""
-        return np.array([self.x_n, self.y_n, self.z_n])
+        return np.hstack([self.x_n, self.y_n, self.z_n])
 
     @position.setter
     def position(self, pos: np.ndarray):
@@ -62,7 +63,7 @@ class State:
     @property
     def velocity_body(self) -> np.ndarray:
         """Get velocity vector in body frame (ft/s)."""
-        return np.array([self.u, self.v, self.w])
+        return np.hstack([self.u, self.v, self.w])
 
     @velocity_body.setter
     def velocity_body(self, vel: np.ndarray):
@@ -72,7 +73,7 @@ class State:
     @property
     def angular_rates(self) -> np.ndarray:
         """Get angular rate vector in body frame (rad/s)."""
-        return np.array([self.p, self.q_rate, self.r])
+        return np.hstack([self.p, self.q_rate, self.r])
 
     @angular_rates.setter
     def angular_rates(self, omega: np.ndarray):
@@ -173,7 +174,7 @@ class State:
         x : np.ndarray, shape (13,)
             State vector [x_n, y_n, z_n, u, v, w, q0, q1, q2, q3, p, q, r]
         """
-        return np.array([
+        return np.hstack([
             self.x_n, self.y_n, self.z_n,  # Position
             self.u, self.v, self.w,        # Velocity
             *self.q.q,                      # Quaternion (4 elements)

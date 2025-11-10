@@ -10,6 +10,8 @@ Implements the rigid body dynamics equations:
 import numpy as np
 from typing import Tuple, Callable
 
+from archimedes.spatial import quaternion_kinematics
+
 # Handle imports for both package and standalone usage
 try:
     from .state import State
@@ -107,21 +109,20 @@ class AircraftDynamics:
         pos_dot = R_b_to_i @ vel_body
 
         # Quaternion derivative: q_dot = 0.5 * Omega(omega) * q
-        p, q_rate, r = omega
-        Omega = np.array([
-            [0,  -p,  -q_rate,  -r],
-            [p,   0,   r,  -q_rate],
-            [q_rate,  -r,   0,   p],
-            [r,   q_rate,  -p,   0]
-        ])
-        q_dot_array = 0.5 * Omega @ state.q.q
+        q_dot_array = quaternion_kinematics(state.q.q, omega, baumgarte=1.0)
 
-        # Construct state derivative
-        state_dot = np.zeros(13)
-        state_dot[0:3] = pos_dot           # Position derivative
-        state_dot[3:6] = vel_body_dot      # Velocity derivative
-        state_dot[6:10] = q_dot_array      # Quaternion derivative
-        state_dot[10:13] = omega_dot       # Angular rate derivative
+        state_dot = State(
+            x_n=pos_dot[0],
+            y_n=pos_dot[1],
+            z_n=pos_dot[2],
+            u=vel_body_dot[0],
+            v=vel_body_dot[1],
+            w=vel_body_dot[2],
+            q=Quaternion(q_dot_array),
+            p=omega_dot[0],
+            q_rate=omega_dot[1],
+            r=omega_dot[2]
+        )
 
         return state_dot
 

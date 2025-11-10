@@ -11,7 +11,11 @@ Convention: q = [q0, q1, q2, q3] = [scalar, vector]
 import numpy as np
 from typing import Tuple
 
+from archimedes import struct, field
+from archimedes.spatial import quaternion_to_dcm
 
+
+@struct(frozen=False)
 class Quaternion:
     """
     Quaternion class for attitude representation and rotation.
@@ -20,30 +24,12 @@ class Quaternion:
     Convention: q = [q0, q1, q2, q3] where q0 is scalar part.
     """
 
-    def __init__(self, q: np.ndarray = None):
-        """
-        Initialize quaternion.
-
-        Parameters:
-        -----------
-        q : np.ndarray, shape (4,)
-            Quaternion elements [q0, q1, q2, q3]
-            If None, initializes to identity quaternion [1, 0, 0, 0]
-        """
-        if q is None:
-            self.q = np.array([1.0, 0.0, 0.0, 0.0])
-        else:
-            self.q = np.array(q, dtype=float)
-            self.normalize()
+    q: np.ndarray = field(default_factory=lambda: np.array([1.0, 0.0, 0.0, 0.0]))
 
     def normalize(self):
         """Normalize quaternion to unit length."""
         norm = np.linalg.norm(self.q)
-        if norm > 1e-10:
-            self.q /= norm
-        else:
-            # Degenerate case - reset to identity
-            self.q = np.array([1.0, 0.0, 0.0, 0.0])
+        self.q = np.where(norm < 1e-10, np.array([1.0, 0.0, 0.0, 0.0]), self.q / norm)
 
     @property
     def scalar(self) -> float:
@@ -57,7 +43,7 @@ class Quaternion:
 
     def conjugate(self) -> 'Quaternion':
         """Return conjugate quaternion q* = [q0, -q1, -q2, -q3]."""
-        q_conj = np.array([self.q[0], -self.q[1], -self.q[2], -self.q[3]])
+        q_conj = np.hstack([self.q[0], -self.q[1], -self.q[2], -self.q[3]])
         return Quaternion(q_conj)
 
     def inverse(self) -> 'Quaternion':
@@ -87,7 +73,7 @@ class Quaternion:
         q2_new = q1[0]*q2[2] - q1[1]*q2[3] + q1[2]*q2[0] + q1[3]*q2[1]
         q3_new = q1[0]*q2[3] + q1[1]*q2[2] - q1[2]*q2[1] + q1[3]*q2[0]
 
-        return Quaternion(np.array([q0, q1_new, q2_new, q3_new]))
+        return Quaternion(np.hstack([q0, q1_new, q2_new, q3_new]))
 
     def __mul__(self, other: 'Quaternion') -> 'Quaternion':
         """Overload * operator for quaternion multiplication."""
@@ -102,15 +88,7 @@ class Quaternion:
         R : np.ndarray, shape (3, 3)
             Direction cosine matrix (inertial to body)
         """
-        q0, q1, q2, q3 = self.q
-
-        R = np.array([
-            [q0**2 + q1**2 - q2**2 - q3**2,  2*(q1*q2 - q0*q3),  2*(q1*q3 + q0*q2)],
-            [2*(q1*q2 + q0*q3),  q0**2 - q1**2 + q2**2 - q3**2,  2*(q2*q3 - q0*q1)],
-            [2*(q1*q3 - q0*q2),  2*(q2*q3 + q0*q1),  q0**2 - q1**2 - q2**2 + q3**2]
-        ])
-
-        return R
+        return quaternion_to_dcm(self.q).T
 
     def to_euler_angles(self) -> Tuple[float, float, float]:
         """

@@ -113,7 +113,7 @@ class ConstantCoeffModel(AeroModel):
         Fz = -D * np.sin(alpha) - L * np.cos(alpha)
         Fy = 0.0  # Side force (simplified)
 
-        forces = np.array([Fx, Fy, Fz])
+        forces = np.hstack([Fx, Fy, Fz])
 
         # Moments with simple stability derivatives
         Cm = self.Cm_0 + self.Cm_alpha * alpha
@@ -124,7 +124,7 @@ class ConstantCoeffModel(AeroModel):
         L_roll = q_bar * self.S_ref * self.b_ref * Cl
         N_yaw = q_bar * self.S_ref * self.b_ref * Cn
 
-        moments = np.array([L_roll, M_pitch, N_yaw])
+        moments = np.hstack([L_roll, M_pitch, N_yaw])
 
         return forces, moments
 
@@ -236,14 +236,14 @@ class LinearAeroModel(AeroModel):
         Fy = Y
         Fz = -D * np.sin(alpha) - L_aero * np.cos(alpha)
 
-        forces = np.array([Fx, Fy, Fz])
+        forces = np.hstack([Fx, Fy, Fz])
 
         # Moments
         L_moment = q_bar * self.S_ref * self.b_ref * Cl
         M_moment = q_bar * self.S_ref * self.c_ref * Cm
         N_moment = q_bar * self.S_ref * self.b_ref * Cn
 
-        moments = np.array([L_moment, M_moment, N_moment])
+        moments = np.hstack([L_moment, M_moment, N_moment])
 
         return forces, moments
 
@@ -316,11 +316,11 @@ class AVLTableModel(AeroModel):
         Fz = -D * np.sin(alpha) - L_aero * np.cos(alpha)
         Fy = 0.0
 
-        forces = np.array([Fx, Fy, Fz])
+        forces = np.hstack([Fx, Fy, Fz])
 
         # Moments
         M_pitch = q_bar * self.S_ref * self.c_ref * Cm
-        moments = np.array([0.0, M_pitch, 0.0])
+        moments = np.hstack([0.0, M_pitch, 0.0])
 
         return forces, moments
 

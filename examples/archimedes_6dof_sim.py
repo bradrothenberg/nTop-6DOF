@@ -17,6 +17,8 @@ import sys
 import os
 import time
 
+import archimedes as arc
+
 # Add src to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -108,14 +110,19 @@ def main():
     dt = 0.01  # 10 ms time step
     t_final = 30.0  # 30 seconds
 
-    integrator = RK4Integrator(dt=dt)
-
     # Throttle schedule
     throttle = 0.8  # 80% throttle
 
+    x0_flat, unravel_x = arc.tree.ravel(state0)
+
+    print(x0_flat)
+    print(unravel_x(x0_flat))
+
     # Create derivative function with throttle
-    def derivative_func(s):
-        return dynamics.state_derivative(s, lambda st: force_model(st, throttle))
+    def derivative_func(t, s_flat):
+        s = unravel_x(s_flat)
+        sdot = dynamics.state_derivative(s, lambda st: force_model(st, throttle))
+        return arc.tree.ravel(sdot)[0]
 
     print(f"Simulation Parameters:")
     print(f"  Time step: {dt*1000:.1f} ms")
@@ -127,16 +134,32 @@ def main():
     # Run Simulation
     # ========================================
 
-    time_start = time.time()
+
+    t_hist = np.arange(0, t_final, dt)
+    @arc.compile
+    def forward(x0_flat):
+        return arc.odeint(derivative_func, (0.0, t_final), x0_flat, t_eval=t_hist)
+
     print("Running simulation...")
-    t_hist, x_hist = integrator.integrate(state0, (0, t_final), derivative_func)
+    time_start = time.time()
+    forward(x0_flat)  # Run once - this includes compile time
     time_end = time.time()
-    print(f"Completed {len(t_hist)} time steps in {time_end - time_start:.2f} seconds")
+    time_full = time_end - time_start
+    print(f"Completed {len(t_hist)} time steps in {time_full*1000:.2f} ms")
+
+    # Run again (doesn't need to re-compile)
+    time_start = time.time()
+    x_hist = forward(x0_flat)
+    time_end = time.time()
+    time_repeat = time_end - time_start
+    print(f"Repeat execution: {time_repeat*1000:.2f} ms")
+    print(f"Compile time: {(time_full - time_repeat)*1000:.2f} ms")
     print()
 
     # ========================================
     # Extract Results
     # ========================================
+    x_hist = x_hist.T
 
     n_steps = len(t_hist)
     altitude = np.zeros(n_steps)
