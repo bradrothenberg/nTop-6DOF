@@ -32,7 +32,7 @@ from src.visualization.animation import animate_trajectory
 import matplotlib.pyplot as plt
 
 
-def simulate_maneuver(duration=60.0, dt=0.1):
+def simulate_maneuver(duration=60.0, dt=0.01):
     """
     Simulate a multi-axis maneuver with autopilot control.
 
@@ -68,33 +68,38 @@ def simulate_maneuver(duration=60.0, dt=0.1):
     aero.CL_0 = 0.2
     aero.CL_alpha = 4.5
     aero.CD_0 = 0.03
-    aero.CD_alpha = 0.1
-    aero.Cm_0 = -0.05
+    aero.CD_alpha2 = 0.8
+    aero.Cm_0 = 0.0
     aero.Cm_alpha = -0.6
+    aero.Cm_q = -8.0
     aero.Cm_elevator = -1.2  # Elevator effectiveness
     aero.CY_beta = -0.3
-    aero.Cl_beta = -0.08
+    aero.Cl_beta = -0.1
+    aero.Cl_p = -0.5
     aero.Cl_aileron = 0.15  # Aileron effectiveness
-    aero.Cn_beta = 0.12
+    aero.Cn_beta = 0.08
+    aero.Cn_r = -0.2
+    aero.Cn_aileron = -0.02
 
     prop = PropellerModel(power_max=50.0, prop_diameter=6.0, prop_efficiency=0.75)
 
     combined_model = CombinedForceModel(aero, prop)
 
-    # Autopilots
-    alt_ctrl = AltitudeHoldController(Kp_alt=0.01, Ki_alt=0.001, Kd_alt=0.05,
-                                      Kp_pitch=0.5, Ki_pitch=0.01, Kd_pitch=0.1)
-    hdg_ctrl = HeadingHoldController(Kp_heading=0.02, Ki_heading=0.001, Kd_heading=0.05,
-                                     Kp_roll=0.3, Ki_roll=0.01, Kd_roll=0.08)
-    spd_ctrl = AirspeedHoldController(Kp=0.005, Ki=0.001, Kd=0.01)
+    # Autopilots with more conservative gains
+    alt_ctrl = AltitudeHoldController(Kp_alt=0.0015, Ki_alt=0.0002, Kd_alt=0.006,
+                                      Kp_pitch=3.0, Ki_pitch=0.8, Kd_pitch=0.2)
+    hdg_ctrl = HeadingHoldController(Kp_heading=0.8, Ki_heading=0.1, Kd_heading=0.15,
+                                     Kp_roll=2.5, Ki_roll=0.5, Kd_roll=0.15)
+    spd_ctrl = AirspeedHoldController(Kp=0.015, Ki=0.002, Kd=0.08)
 
     # Initial state
     state = State()
-    state.position_ned = np.array([0, 0, -5000])  # Start at 5000 ft
-    state.velocity_body = np.array([200, 0, 0])  # 200 ft/s forward
-    state.q = Quaternion.from_euler_angles(0, np.radians(3), 0)  # 3° pitch
+    state.position = np.array([0.0, 0.0, -5000.0])  # Start at 5000 ft
+    state.velocity_body = np.array([200.0, 0.0, 0.0])  # 200 ft/s forward
+    state.set_euler_angles(0, np.radians(2), 0)  # 2° pitch
+    state.angular_rates = np.array([0.0, 0.0, 0.0])
 
-    # No integrator needed - manual integration for control updates
+    # Use smaller time step for stability
 
     # Storage
     n_steps = int(duration / dt)
@@ -111,15 +116,15 @@ def simulate_maneuver(duration=60.0, dt=0.1):
     moments_history = np.zeros((n_steps, 3))
 
     # Autopilot targets
-    alt_ctrl.set_target_altitude(6500.0)  # Climb to 6500 ft
-    hdg_ctrl.set_target_heading(np.radians(45))  # Turn to 45°
+    alt_ctrl.set_target_altitude(6000.0)  # Climb to 6000 ft
+    hdg_ctrl.set_target_heading(np.radians(90))  # Turn to 90° (East)
     spd_ctrl.set_target_airspeed(220.0)  # Increase speed to 220 ft/s
 
     print("Starting simulation...")
-    print(f"Duration: {duration:.1f} s")
+    print(f"Duration: {duration:.1f} s, dt: {dt} s")
     print(f"Initial altitude: 5000 ft")
-    print(f"Target altitude: 6500 ft")
-    print(f"Target heading: 45°")
+    print(f"Target altitude: 6000 ft")
+    print(f"Target heading: 90°")
     print(f"Target airspeed: 220 ft/s")
     print()
 
@@ -128,13 +133,13 @@ def simulate_maneuver(duration=60.0, dt=0.1):
         time[i] = i * dt
 
         # Atmosphere
-        altitude = -state.position_ned[2]
+        altitude = state.altitude
         atm = StandardAtmosphere(altitude)
         aero.rho = atm.density
 
         # Autopilot commands
         roll, pitch, yaw = state.euler_angles
-        airspeed = np.linalg.norm(state.velocity_body)
+        airspeed = state.airspeed
 
         elevator = alt_ctrl.update(altitude, pitch, dt)
         aileron = hdg_ctrl.update(yaw, roll, dt)
@@ -147,7 +152,7 @@ def simulate_maneuver(duration=60.0, dt=0.1):
         throttle = np.clip(throttle, 0.0, 1.0)
 
         # Store data
-        positions[i] = state.position_ned
+        positions[i] = state.position
         velocities[i] = state.velocity_body
         euler_angles[i] = state.euler_angles
         angular_rates[i] = state.angular_rates
