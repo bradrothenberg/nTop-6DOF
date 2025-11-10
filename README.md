@@ -74,6 +74,30 @@ A production-ready Python framework for 6-degree-of-freedom (6-DOF) flight dynam
    - ✅ Force and moment computation
    - ✅ Damping derivatives support
 
+### Phase 4: Analysis Tools ✅ (COMPLETED)
+
+**Completed Components:**
+
+1. **Linearization** ([src/analysis/stability.py](src/analysis/stability.py))
+   - ✅ Linearize dynamics about trim point
+   - ✅ Extract A, B, C, D state-space matrices
+   - ✅ Finite difference method for Jacobians
+   - ✅ Full 13-state, 4-input linearized model
+
+2. **Stability Analysis** ([src/analysis/stability.py](src/analysis/stability.py))
+   - ✅ Eigenvalue and eigenvector computation
+   - ✅ Dynamic mode identification
+   - ✅ Mode classification (phugoid, short period, dutch roll, roll, spiral)
+   - ✅ Damping ratio and natural frequency extraction
+   - ✅ Stability assessment
+
+3. **Frequency Response** ([src/analysis/frequency.py](src/analysis/frequency.py))
+   - ✅ Bode plot computation (magnitude and phase)
+   - ✅ Step response analysis
+   - ✅ Impulse response analysis
+   - ✅ Gain and phase margin calculation
+   - ✅ Transfer function utilities
+
 ---
 
 ### Phase 1: AVL Geometry Generation & Validation ✅ (COMPLETED)
@@ -321,13 +345,14 @@ All phases have comprehensive test suites:
 - **Phase 1 Tests** ([tests/test_phase1.py](tests/test_phase1.py)): 11 tests for AVL geometry generation
 - **Phase 2 Tests** ([tests/test_phase2.py](tests/test_phase2.py)): 23 tests for 6-DOF dynamics
 - **Phase 3 Tests** ([tests/test_phase3.py](tests/test_phase3.py)): 22 tests for supporting systems
+- **Phase 4 Tests** ([tests/test_phase4.py](tests/test_phase4.py)): 11 tests for analysis tools
 
 Run all tests:
 ```bash
 pytest tests/ -v
 ```
 
-Total: **56 passing tests**
+Total: **67 passing tests**
 
 ---
 
@@ -344,6 +369,12 @@ Demonstrates complete 6-DOF simulation with quaternion attitude, RK4 integration
 python examples/autopilot_demo.py
 ```
 Demonstrates altitude hold, heading hold, and airspeed hold autopilots with standard atmosphere integration.
+
+### Phase 4: Stability Analysis
+```bash
+python examples/stability_analysis_demo.py
+```
+Demonstrates linearization, eigenvalue analysis, mode identification, and frequency response (Bode plots, step responses).
 
 ---
 
@@ -364,6 +395,9 @@ nTop6DOF/
 │   ├── control/            # ✅ Autopilot and trim
 │   │   ├── autopilot.py        # ✅ PID controllers
 │   │   └── trim.py             # ✅ Trim solver
+│   ├── analysis/           # ✅ Stability and frequency analysis
+│   │   ├── stability.py        # ✅ Linearization and modes
+│   │   └── frequency.py        # ✅ Bode plots, step response
 │   ├── aero/
 │   │   ├── avl_geometry.py     # ✅ AVL file generator
 │   │   ├── avl_interface.py    # ✅ AVL Python interface
@@ -379,10 +413,12 @@ nTop6DOF/
 ├── tests/
 │   ├── test_phase1.py          # ✅ Phase 1 tests (11 tests)
 │   ├── test_phase2.py          # ✅ Phase 2 tests (23 tests)
-│   └── test_phase3.py          # ✅ Phase 3 tests (22 tests)
+│   ├── test_phase3.py          # ✅ Phase 3 tests (22 tests)
+│   └── test_phase4.py          # ✅ Phase 4 tests (11 tests)
 ├── examples/
 │   ├── simple_6dof_sim.py      # ✅ Basic 6-DOF simulation
-│   └── autopilot_demo.py       # ✅ Autopilot demonstration
+│   ├── autopilot_demo.py       # ✅ Autopilot demonstration
+│   └── stability_analysis_demo.py  # ✅ Stability analysis
 ├── config/                     # TODO
 ├── Data/
 │   ├── LEpts.csv              # ✅ Wing LE points (from nTop)
@@ -404,18 +440,17 @@ nTop6DOF/
 
 ---
 
-## Next Steps (Phase 4 & Beyond)
+## Next Steps (Phase 5 & Beyond)
 
-### Phase 4: Analysis Tools (Planned)
-1. **Stability Analysis**
-   - Linearization about trim
-   - Eigenvalue/eigenvector analysis
-   - Mode identification (phugoid, short period, dutch roll, etc.)
-   - Stability margins
-2. **Frequency Response**
-   - Bode plots
-   - Step/impulse responses
-   - Control design tools
+### Phase 5: I/O and Configuration (Planned)
+1. **Configuration Files**
+   - YAML-based aircraft definitions
+   - Easy aircraft setup from config files
+   - Parameter sweeps and batch analysis
+2. **File Parsers**
+   - Enhanced AVL output parsing
+   - XFOIL polar integration
+   - Export/import utilities
 
 ### Medium Term:
 - XFOIL integration for 2D airfoil polars
@@ -492,6 +527,6 @@ Internal nTop project - not for external distribution.
 ---
 
 **Last Updated**: 2025-01-10
-**Status**: Phases 1, 2, 3 Complete - Core Framework Operational
-**Version**: 0.3.0-alpha
-**Test Coverage**: 56 passing tests across 3 phases
+**Status**: Phases 1, 2, 3, 4 Complete - Core Framework with Analysis Tools
+**Version**: 0.4.0-alpha
+**Test Coverage**: 67 passing tests across 4 phases
