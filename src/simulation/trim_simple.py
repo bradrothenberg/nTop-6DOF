@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.core.state import State
 from src.core.dynamics import AircraftDynamics
 from src.core.aerodynamics import LinearAeroModel
-from src.core.propulsion import PropellerModel, CombinedForceModel
+from src.core.propulsion import PropellerModel, TurbofanModel, CombinedForceModel
 from src.environment.atmosphere import StandardAtmosphere
 
 
