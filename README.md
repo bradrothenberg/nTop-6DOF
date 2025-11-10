@@ -558,7 +558,9 @@ For issues with:
 
 ## License
 
-Internal nTop project - not for external distribution.
+MIT License - See [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 Brad Rothenberg
 
 ---
 
