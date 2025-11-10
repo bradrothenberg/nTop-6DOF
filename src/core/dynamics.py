@@ -76,10 +76,15 @@ class AircraftDynamics:
         forces, moments = forces_moments(state)
 
         # === Translational Dynamics ===
-        # F = m * (v_dot + omega x v) + m * g * R^T * [0, 0, g]
-        # Rearrange: v_dot = F/m - omega x v - g * R^T * [0, 0, g]
+        # F = m * (v_dot + omega x v) - m * g_body
+        # where g_body is gravity vector transformed to body frame
+        # Rearrange: v_dot = F/m - omega x v + g_body
+        #
+        # Note: In NED frame, gravity is [0, 0, +g] (down is positive)
+        # When transformed to body frame, this becomes g_body = R @ [0, 0, g]
+        # The gravity force is F_grav = m * g_body, contributing to acceleration as +g_body
 
-        # Gravity in inertial frame
+        # Gravity in inertial frame (NED: down is positive)
         g_inertial = np.array([0, 0, self.g])
 
         # Transform gravity to body frame
@@ -90,7 +95,8 @@ class AircraftDynamics:
         omega_cross_v = np.cross(omega, vel_body)
 
         # Velocity derivative in body frame
-        vel_body_dot = forces / self.mass - omega_cross_v - g_body
+        # FIX: Add g_body (not subtract) - gravity contributes positive acceleration
+        vel_body_dot = forces / self.mass - omega_cross_v + g_body
 
         # === Rotational Dynamics ===
         # M = I * omega_dot + omega x (I * omega)
