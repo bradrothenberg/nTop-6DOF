@@ -261,6 +261,148 @@ class LinearAeroModel(AeroModel):
         pass
 
 
+class FlyingWingAeroModel(LinearAeroModel):
+    """
+    Aerodynamic model specifically for flying wing aircraft with flaperons.
+
+    Extends LinearAeroModel to include:
+    - Flaperon control coupling (roll + pitch + lift + drag)
+    - Flying wing specific coupling derivatives (Cl_alpha, Cm_p, Cm_r, Cn_p)
+    - Ixz product of inertia effects (handled in dynamics, but derivatives adjusted)
+    """
+
+    def __init__(self, S_ref: float, c_ref: float, b_ref: float,
+                 rho: float = 0.002377, Ixz_factor: float = 0.10):
+        """
+        Initialize flying wing aero model.
+
+        Parameters
+        ----------
+        S_ref : float
+            Reference area (ft²)
+        c_ref : float
+            Reference chord (ft)
+        b_ref : float
+            Reference span (ft)
+        rho : float
+            Air density (slug/ft³)
+        Ixz_factor : float
+            Product of inertia factor (0.05-0.15 typical)
+        """
+        super().__init__(S_ref, c_ref, b_ref, rho)
+
+        self.Ixz_factor = Ixz_factor
+
+        # Override control derivatives with flaperon-specific values
+        # (user should set these based on aircraft)
+        self.Cl_flaperon = 0.15    # Roll effectiveness
+        self.Cm_flaperon = -0.08   # Nose-down pitching
+        self.CL_flaperon = 0.30    # Lift increase
+        self.CD_flaperon = 0.10    # Drag penalty
+
+        # Flying wing coupling derivatives (typical values)
+        self.Cl_alpha = -0.08      # Roll due to angle of attack
+        self.Cm_p = -0.10          # Pitch due to roll rate
+        self.Cm_r = -0.04          # Pitch due to yaw rate
+        self.Cn_p = -0.02          # Yaw due to roll rate
+
+        # Keep standard control derivatives for compatibility
+        self.Cl_aileron = self.Cl_flaperon  # Alias for compatibility
+        self.Cm_elevator = -1.2             # If separate elevator exists
+
+    def compute_forces_moments(self, state: State,
+                                controls: Dict[str, float] = None) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Compute forces and moments with flaperon control coupling.
+
+        Flaperon deflection affects:
+        - Roll moment (primary)
+        - Pitch moment (secondary)
+        - Lift force
+        - Drag force
+        """
+        if controls is None:
+            controls = {}
+
+        # Get control deflections
+        delta_e = controls.get('elevator', 0.0)      # Separate elevator (if exists)
+        delta_f = controls.get('flaperon', 0.0)      # Flaperon deflection
+        delta_a = controls.get('aileron', 0.0)       # Alias for flaperon
+        delta_r = controls.get('rudder', 0.0)        # Rudder
+
+        # Use flaperon or aileron (whichever is provided)
+        if delta_f == 0.0 and delta_a != 0.0:
+            delta_f = delta_a
+
+        # State variables
+        V = state.airspeed
+        if V < 1.0:
+            V = 1.0
+        q_bar = 0.5 * self.rho * V**2
+
+        alpha = state.alpha
+        beta = state.beta
+
+        # Non-dimensional angular rates
+        p, q, r = state.angular_rates
+        p_hat = p * self.b_ref / (2 * V)
+        q_hat = q * self.c_ref / (2 * V)
+        r_hat = r * self.b_ref / (2 * V)
+
+        # Force coefficients with flaperon effects
+        CL = (self.CL_0 + self.CL_alpha * alpha + self.CL_q * q_hat +
+              self.CL_de * delta_e + self.CL_flaperon * delta_f)
+
+        # Drag includes flaperon penalty
+        CD = (self.CD_0 + self.CD_alpha * alpha + self.CD_alpha2 * alpha**2 +
+              self.CD_flaperon * abs(delta_f))
+
+        CY = self.CY_beta * beta + self.CY_dr * delta_r
+
+        # Moment coefficients with flying wing coupling
+        Cl = (self.Cl_beta * beta +
+              self.Cl_p * p_hat +
+              self.Cl_r * r_hat +
+              self.Cl_alpha * alpha +        # NEW: Roll due to alpha
+              self.Cl_flaperon * delta_f +   # Flaperon roll
+              self.Cl_dr * delta_r)
+
+        Cm = (self.Cm_0 +
+              self.Cm_alpha * alpha +
+              self.Cm_q * q_hat +
+              self.Cm_p * p_hat +            # NEW: Pitch due to roll rate
+              self.Cm_r * r_hat +            # NEW: Pitch due to yaw rate
+              self.Cm_de * delta_e +
+              self.Cm_flaperon * delta_f)    # Flaperon pitch coupling
+
+        Cn = (self.Cn_beta * beta +
+              self.Cn_p * p_hat +            # NEW: Yaw due to roll rate
+              self.Cn_r * r_hat +
+              self.Cn_da * delta_f +         # Use flaperon
+              self.Cn_dr * delta_r)
+
+        # Forces in wind frame
+        L_aero = q_bar * self.S_ref * CL
+        D = q_bar * self.S_ref * CD
+        Y = q_bar * self.S_ref * CY
+
+        # Transform to body frame
+        Fx = -D * np.cos(alpha) + L_aero * np.sin(alpha)
+        Fy = Y
+        Fz = -D * np.sin(alpha) - L_aero * np.cos(alpha)
+
+        forces = np.array([Fx, Fy, Fz])
+
+        # Moments
+        L_moment = q_bar * self.S_ref * self.b_ref * Cl
+        M_moment = q_bar * self.S_ref * self.c_ref * Cm
+        N_moment = q_bar * self.S_ref * self.b_ref * Cn
+
+        moments = np.array([L_moment, M_moment, N_moment])
+
+        return forces, moments
+
+
 class AVLTableModel(AeroModel):
     """
     Table-based aerodynamic model using AVL data.

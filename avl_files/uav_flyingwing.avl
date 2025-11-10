@@ -1,0 +1,92 @@
+nTop_FlyingWing
+#Mach
+    0.000
+#IYsym   IZsym   Zsym
+ 0      0       0.0
+#Sref    Cref    Bref
+   412.6370     11.9555     24.8630
+#Xref    Yref    Zref
+    12.8461     -0.0006     0.0437
+#CDp (optional)
+    0.00000
+#
+#============================================================
+SURFACE
+Wing
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+  20         1.00      20        1.00
+#
+COMPONENT
+ 1
+#
+YDUPLICATE
+     0.0000
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   0.0219   0.0000   0.0000 22.4008   0.00
+#
+AFIL
+ NACA 2412
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   1.5078   0.5789   0.0608 20.7604   0.00
+#
+AFIL
+ NACA 2412
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   3.3144   1.1579   0.1217 18.9268   0.00
+#
+AFIL
+ NACA 2412
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   6.4911   1.7368   0.1825 14.9830   0.00
+#
+AFIL
+ NACA 2412
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+  12.8889   5.9671   0.6272  6.0971   0.00
+#
+AFIL
+ NACA 2412
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ elevon    1.000   0.600   0.0  0.0  0.0   -1.00
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+  17.9008  11.8672   1.2473  2.0784   0.00
+#
+AFIL
+ NACA 2412
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ elevon    1.000   0.600   0.0  0.0  0.0   -1.00
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+  18.3743  12.4315   1.3066  0.2455   0.00
+#
+AFIL
+ NACA 2412
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ elevon    1.000   0.600   0.0  0.0  0.0   -1.00
+#

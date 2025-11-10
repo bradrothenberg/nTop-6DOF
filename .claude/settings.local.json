@@ -1,28 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir:*)",
-      "Bash(pip install:*)",
-      "Bash(python:*)",
-      "Bash(\"C:\\Users\\bradrothenberg\\OneDrive - nTop\\Sync\\AVL\\avl.exe\")",
-      "Bash(git init:*)",
-      "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: nTop 6-DOF flight dynamics framework - Phase 1 complete\n\nPhase 1 deliverables:\n- Wing geometry parser from nTop CSV exports (LE/TE points)\n- Mass properties converter (US Customary to AVL units)\n- AVL geometry file generator with wing, tail, and control surfaces\n- AVL run case generator for multiple flight conditions\n- AVL Python interface for automated analysis\n- US Standard Atmosphere model\n- Complete project structure and documentation\n\nKey features:\n- Automated AVL geometry generation from nTop exports\n- Properly discretized vortex lattice panels (20 wing, 12 h-tail, 10 v-tail)\n- Control surfaces: flaperons (80% chord, 75% span), elevator, rudder\n- Flight conditions: cruise (M0.25@20kft), climb, landing\n- NACA 2412 wing airfoil, NACA 0012 tail airfoils\n\nAircraft configuration:\n- Wing: 19.89 ft span, 199.94 ft² area, AR=1.98 (highly swept delta)\n- Mass: 234.8 slugs (7,555 lbm)\n- CG: (12.92, 0.001, 0.045) ft\n- Estimated tail surfaces using volume coefficients\n\nStatus: Phase 1 complete, geometry validated in AVL\nNext: Phase 2 - Core 6-DOF dynamics implementation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git branch:*)",
-      "Bash(git remote add:*)",
-      "Bash(git push:*)",
-      "Bash(git commit:*)",
-      "Bash(git checkout:*)",
-      "Bash(gh pr create:*)",
-      "Bash(git remote get-url:*)",
-      "Bash(winget --version:*)",
-      "Bash(winget install:*)",
-      "Bash(gh --version:*)",
-      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" --version)",
-      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth status)",
-      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --web)",
-      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr create:*)",
-      "Bash(git pull origin main)"
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr view 7)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr merge 7 --squash --delete-branch)",
+      "Bash(git fetch:*)",
+      "Bash(tee:*)",
+      "Bash(cd c:UsersbradrothenbergOneDrive' - nTop'OUTpartsnTopAVLnTop6DOF)"
     ],
     "deny": [],
     "ask": []

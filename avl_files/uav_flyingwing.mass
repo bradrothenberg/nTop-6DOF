@@ -1,0 +1,5 @@
+#  nTop_FlyingWing Mass File
+#  Units: slugs, feet
+#
+#  mass    x       y       z       Ixx     Iyy     Izz     Ixy     Ixz     Iyz
+     228.924806   12.8461    -0.0006    0.0437    19236.2914     2251.0172    21487.3086        0.0000        0.0000        0.0000
