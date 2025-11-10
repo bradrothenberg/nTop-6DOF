@@ -12,7 +12,17 @@
       "Bash(git remote add:*)",
       "Bash(git push:*)",
       "Bash(git commit:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git remote get-url:*)",
+      "Bash(winget --version:*)",
+      "Bash(winget install:*)",
+      "Bash(gh --version:*)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" --version)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth status)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" auth login --web)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" pr create:*)",
+      "Bash(git pull origin main)"
     ],
     "deny": [],
     "ask": []
