@@ -85,6 +85,9 @@ def find_level_flight_trim(
         """
         alpha, theta, throttle, elevator = x
 
+        # Update atmosphere for altitude
+        atm = StandardAtmosphere(altitude)
+
         # Create state
         state = State()
 
@@ -114,6 +117,10 @@ def find_level_flight_trim(
             'aileron': 0.0,
             'rudder': 0.0
         }
+
+        # Update aero model density
+        if hasattr(force_model, 'aero_model'):
+            force_model.aero_model.rho = atm.density
 
         # Compute forces and moments
         def force_func_with_controls(s):
@@ -314,10 +321,12 @@ if __name__ == "__main__":
     prop = PropellerModel(power_max=50.0, prop_diameter=6.0, prop_efficiency=0.75)
     combined_model = CombinedForceModel(aero, prop)
 
-    # Find trim at 5000 ft, 200 ft/s
+    # Find trim at 5000 ft, Mach 0.5 (~548.5 ft/s)
+    airspeed_mach05 = 548.5  # ft/s at 5000 ft
+
     print("Finding trim for:")
     print(f"  Altitude: 5000 ft")
-    print(f"  Airspeed: 200 ft/s")
+    print(f"  Airspeed: {airspeed_mach05:.1f} ft/s (Mach 0.5)")
     print(f"  Heading: 0 deg")
     print()
 
@@ -325,8 +334,14 @@ if __name__ == "__main__":
         dynamics,
         combined_model,
         altitude=-5000.0,
-        airspeed=200.0,
-        heading=0.0
+        airspeed=airspeed_mach05,
+        heading=0.0,
+        initial_guess={
+            'alpha': np.radians(1.75),
+            'theta': np.radians(1.75),
+            'throttle': 0.3,
+            'elevator': 0.0
+        }
     )
 
     print("Trim Solution:")
