@@ -211,12 +211,12 @@ def main():
     print()
 
     # Create flying wing autopilot with pitch rate damping
-    # Moderate gains - balance between response and stability
+    # Tuned gains for stable flight with XFOIL drag model
     autopilot = FlyingWingAutopilot(
-        # Altitude hold gains (outer loop)
-        Kp_alt=0.003,      # Pitch command per ft altitude error
-        Ki_alt=0.0002,     # Integral for steady-state
-        Kd_alt=0.008,      # Damp altitude rate
+        # Altitude hold gains (outer loop) - increased for tighter hold
+        Kp_alt=0.005,      # Pitch command per ft altitude error (was 0.003)
+        Ki_alt=0.0005,     # Integral for steady-state (was 0.0002)
+        Kd_alt=0.012,      # Damp altitude rate (was 0.008)
 
         # Pitch attitude gains (middle loop)
         Kp_pitch=0.8,      # Pitch rate command per pitch error
@@ -313,10 +313,10 @@ def main():
             throttle = 1.0  # Max throttle for stall recovery
             stall_protection_count += 1
         else:
-            # Proportional throttle control with aggressive gain
+            # Proportional throttle control optimized for XFOIL drag model
             airspeed_error = trim_airspeed - state.airspeed
-            # Use trim throttle as baseline, add strong correction
-            throttle = controls_trim['throttle'] + 0.002 * airspeed_error
+            # Use trim throttle as baseline with aggressive correction
+            throttle = controls_trim['throttle'] + 0.015 * airspeed_error  # Tuned for CD_0=0.006
             throttle = np.clip(throttle, 0.05, 1.0)  # Minimum 5% throttle
 
         controls = {
