@@ -165,6 +165,66 @@ class AircraftDynamics:
 
         return new_state
 
+    def propagate_rk4(self, state: State, dt: float, forces_moments: Callable) -> State:
+        """
+        Propagate state forward by dt using Runge-Kutta 4th order integration.
+
+        RK4 provides much better accuracy and stability than Euler integration.
+        For the same timestep, RK4 has O(dt^4) error vs O(dt) for Euler.
+
+        Parameters:
+        -----------
+        state : State
+            Current state
+        dt : float
+            Time step (seconds)
+        forces_moments : Callable
+            Function returning (forces, moments) given state
+
+        Returns:
+        --------
+        new_state : State
+            State at t + dt
+        """
+        # Get initial state array
+        x0 = state.to_array()
+
+        # k1 = f(t, x)
+        k1 = self.state_derivative(state, forces_moments)
+
+        # k2 = f(t + dt/2, x + k1*dt/2)
+        x_temp = x0 + 0.5 * k1 * dt
+        state_temp = State()
+        state_temp.from_array(x_temp)
+        state_temp.q.normalize()  # Keep quaternion valid
+        k2 = self.state_derivative(state_temp, forces_moments)
+
+        # k3 = f(t + dt/2, x + k2*dt/2)
+        x_temp = x0 + 0.5 * k2 * dt
+        state_temp = State()
+        state_temp.from_array(x_temp)
+        state_temp.q.normalize()
+        k3 = self.state_derivative(state_temp, forces_moments)
+
+        # k4 = f(t + dt, x + k3*dt)
+        x_temp = x0 + k3 * dt
+        state_temp = State()
+        state_temp.from_array(x_temp)
+        state_temp.q.normalize()
+        k4 = self.state_derivative(state_temp, forces_moments)
+
+        # Combine: x_new = x + (k1 + 2*k2 + 2*k3 + k4) * dt / 6
+        x_new = x0 + (k1 + 2*k2 + 2*k3 + k4) * dt / 6.0
+
+        # Create new state
+        new_state = State()
+        new_state.from_array(x_new)
+
+        # Normalize quaternion to maintain unit constraint
+        new_state.q.normalize()
+
+        return new_state
+
 
 class SimpleForceModel:
     """Simple force and moment model for testing."""

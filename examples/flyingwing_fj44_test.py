@@ -258,11 +258,15 @@ def main():
     # FJ-44-4A Turbofan (1900 lbf thrust)
     turbofan = TurbofanModel(thrust_max=1900.0, altitude_lapse_rate=0.7)
 
+    # Trim conditions
+    trim_altitude = -5000.0
+    trim_airspeed = 548.5
+
     # Find trim
     state_trim, controls_trim, trim_info = find_turbofan_trim(
         mass, inertia, aero, turbofan,
-        altitude=-5000.0,
-        airspeed=548.5
+        altitude=trim_altitude,
+        airspeed=trim_airspeed
     )
 
     if not trim_info['is_acceptable']:
@@ -285,37 +289,55 @@ def main():
     state = state_trim.copy()
     combined = CombinedForceModel(aero, turbofan)
 
-    print("Starting simulation (60s, NO AUTOPILOT)...")
+    # Simple autopilot parameters
+    target_airspeed = trim_airspeed
+    target_altitude = trim_altitude
+    Kp_throttle = 0.005  # Throttle per ft/s airspeed error (increased 5x)
+    Kp_elevon = 0.003    # Elevon (rad) per ft altitude error (increased 6x)
+
+    print("Starting simulation (60s, RK4 integration, SIMPLE AUTOPILOT)...")
+    print(f"  Target: {target_airspeed:.0f} ft/s, {-target_altitude:.0f} ft MSL")
     print()
 
     for i in range(n_steps):
         time[i] = i * dt
 
-        # Update atmosphere
-        atm = StandardAtmosphere(state.altitude)
-        aero.rho = atm.density
-
-        # Store data
+        # Store data (before update)
         positions[i] = state.position
         velocities[i] = state.velocity_body
         euler_angles[i] = state.euler_angles
         angular_rates[i] = state.angular_rates
-        throttle_history[i] = controls_trim['throttle']
 
-        # Fixed controls (trim values)
+        # Simple autopilot - adjust controls based on errors
+        airspeed_error = target_airspeed - state.airspeed
+        altitude_error = target_altitude - state.altitude
+
+        # Throttle control for airspeed
+        throttle = controls_trim['throttle'] + Kp_throttle * airspeed_error
+        throttle = np.clip(throttle, 0.01, 1.0)
+
+        # Elevon control for altitude (pitch up to climb, pitch down to descend)
+        elevon = controls_trim['elevator'] + Kp_elevon * altitude_error
+        elevon = np.clip(elevon, np.radians(-25), np.radians(25))
+
+        controls = {
+            'throttle': throttle,
+            'elevator': elevon,
+            'aileron': 0.0,
+            'rudder': 0.0
+        }
+
+        throttle_history[i] = throttle
+
+        # Force function with atmosphere update
         def force_func(s):
-            return combined(s, controls_trim['throttle'], controls_trim)
+            # Update atmosphere density for current altitude
+            atm = StandardAtmosphere(s.altitude)
+            aero.rho = atm.density
+            return combined(s, controls['throttle'], controls)
 
-        # State derivative
-        state_dot = dynamics.state_derivative(state, force_func)
-
-        # Euler integration
-        x = state.to_array()
-        x_new = x + state_dot * dt
-        state.from_array(x_new)
-
-        # Normalize quaternion
-        state.q.normalize()
+        # RK4 integration (much more stable than Euler!)
+        state = dynamics.propagate_rk4(state, dt, force_func)
 
     print("Simulation complete!")
     print()
