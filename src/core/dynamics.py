@@ -76,10 +76,15 @@ class AircraftDynamics:
         forces, moments = forces_moments(state)
 
         # === Translational Dynamics ===
-        # F = m * (v_dot + omega x v) + m * g * R^T * [0, 0, g]
-        # Rearrange: v_dot = F/m - omega x v - g * R^T * [0, 0, g]
+        # F = m * (v_dot + omega x v) - m * g_body
+        # where g_body is gravity vector transformed to body frame
+        # Rearrange: v_dot = F/m - omega x v + g_body
+        #
+        # Note: In NED frame, gravity is [0, 0, +g] (down is positive)
+        # When transformed to body frame, this becomes g_body = R @ [0, 0, g]
+        # The gravity force is F_grav = m * g_body, contributing to acceleration as +g_body
 
-        # Gravity in inertial frame
+        # Gravity in inertial frame (NED: down is positive)
         g_inertial = np.array([0, 0, self.g])
 
         # Transform gravity to body frame
@@ -90,7 +95,8 @@ class AircraftDynamics:
         omega_cross_v = np.cross(omega, vel_body)
 
         # Velocity derivative in body frame
-        vel_body_dot = forces / self.mass - omega_cross_v - g_body
+        # FIX: Add g_body (not subtract) - gravity contributes positive acceleration
+        vel_body_dot = forces / self.mass - omega_cross_v + g_body
 
         # === Rotational Dynamics ===
         # M = I * omega_dot + omega x (I * omega)
@@ -153,6 +159,66 @@ class AircraftDynamics:
         # Create new state
         new_state = State()
         new_state.from_array(new_state_array)
+
+        # Normalize quaternion to maintain unit constraint
+        new_state.q.normalize()
+
+        return new_state
+
+    def propagate_rk4(self, state: State, dt: float, forces_moments: Callable) -> State:
+        """
+        Propagate state forward by dt using Runge-Kutta 4th order integration.
+
+        RK4 provides much better accuracy and stability than Euler integration.
+        For the same timestep, RK4 has O(dt^4) error vs O(dt) for Euler.
+
+        Parameters:
+        -----------
+        state : State
+            Current state
+        dt : float
+            Time step (seconds)
+        forces_moments : Callable
+            Function returning (forces, moments) given state
+
+        Returns:
+        --------
+        new_state : State
+            State at t + dt
+        """
+        # Get initial state array
+        x0 = state.to_array()
+
+        # k1 = f(t, x)
+        k1 = self.state_derivative(state, forces_moments)
+
+        # k2 = f(t + dt/2, x + k1*dt/2)
+        x_temp = x0 + 0.5 * k1 * dt
+        state_temp = State()
+        state_temp.from_array(x_temp)
+        state_temp.q.normalize()  # Keep quaternion valid
+        k2 = self.state_derivative(state_temp, forces_moments)
+
+        # k3 = f(t + dt/2, x + k2*dt/2)
+        x_temp = x0 + 0.5 * k2 * dt
+        state_temp = State()
+        state_temp.from_array(x_temp)
+        state_temp.q.normalize()
+        k3 = self.state_derivative(state_temp, forces_moments)
+
+        # k4 = f(t + dt, x + k3*dt)
+        x_temp = x0 + k3 * dt
+        state_temp = State()
+        state_temp.from_array(x_temp)
+        state_temp.q.normalize()
+        k4 = self.state_derivative(state_temp, forces_moments)
+
+        # Combine: x_new = x + (k1 + 2*k2 + 2*k3 + k4) * dt / 6
+        x_new = x0 + (k1 + 2*k2 + 2*k3 + k4) * dt / 6.0
+
+        # Create new state
+        new_state = State()
+        new_state.from_array(x_new)
 
         # Normalize quaternion to maintain unit constraint
         new_state.q.normalize()

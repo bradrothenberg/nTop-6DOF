@@ -197,6 +197,87 @@ class PropellerModel(PropulsionModel):
         return forces, moments
 
 
+class TurbofanModel(PropulsionModel):
+    """
+    Turbofan engine model (e.g., FJ-44).
+
+    More realistic for high-speed flight than propellers.
+    Thrust relatively constant with airspeed (unlike propellers).
+    """
+
+    def __init__(self, thrust_max: float = 1900.0,  # lbf (FJ-44-4 rating)
+                 thrust_offset: np.ndarray = None,
+                 altitude_lapse_rate: float = 0.7):
+        """
+        Initialize turbofan model.
+
+        Parameters:
+        -----------
+        thrust_max : float
+            Maximum static thrust at sea level (lbf)
+            FJ-44-4A: 1900 lbf
+            FJ-44-4M: 3600 lbf
+        thrust_offset : np.ndarray, optional
+            Thrust line offset from CG [x, y, z] (ft)
+        altitude_lapse_rate : float
+            Thrust reduction with altitude (typical 0.6-0.8)
+            T_altitude = T_sl * (rho/rho_sl)^altitude_lapse_rate
+        """
+        self.thrust_max = thrust_max
+        if thrust_offset is None:
+            self.thrust_offset = np.array([0.0, 0.0, 0.0])
+        else:
+            self.thrust_offset = thrust_offset
+        self.altitude_lapse_rate = altitude_lapse_rate
+
+        # Sea level density
+        self.rho_sl = 0.002377  # slug/ft^3
+
+    def compute_thrust(self, state: State, throttle: float = 1.0) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Compute turbofan thrust.
+
+        Turbofan thrust characteristics:
+        - Relatively constant with airspeed (unlike propellers)
+        - Decreases with altitude (density effect)
+        - Linear with throttle setting
+        - Small velocity correction (ram drag)
+        """
+        # Get atmospheric density (from state or default)
+        # Assume density is available through state's altitude
+        from src.environment.atmosphere import StandardAtmosphere
+        atm = StandardAtmosphere(state.altitude)
+        rho = atm.density
+
+        # Altitude correction (lapse rate)
+        altitude_factor = (rho / self.rho_sl) ** self.altitude_lapse_rate
+
+        # Velocity correction (ram drag and inlet effects)
+        # Turbofans maintain thrust better at speed than propellers
+        # Small reduction at very high speed (Mach > 0.7)
+        V = state.airspeed
+        mach = V / 1116.0  # Approximate speed of sound at sea level (ft/s)
+
+        if mach < 0.7:
+            velocity_factor = 1.0  # Nearly constant thrust
+        else:
+            # Slight reduction above Mach 0.7
+            velocity_factor = 1.0 - 0.1 * (mach - 0.7)
+
+        velocity_factor = max(0.7, velocity_factor)  # Don't drop below 70%
+
+        # Total thrust
+        thrust = self.thrust_max * throttle * altitude_factor * velocity_factor
+
+        # Thrust along body x-axis
+        forces = np.array([thrust, 0.0, 0.0])
+
+        # Moments due to thrust offset
+        moments = np.cross(self.thrust_offset, forces)
+
+        return forces, moments
+
+
 class CombinedForceModel:
     """
     Combines aerodynamic and propulsion models.
