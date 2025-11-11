@@ -201,7 +201,7 @@ def main():
     print(f"   Altitude:  {-state0.position[2]:.0f} ft")
     print(f"   Airspeed:  {state0.airspeed:.1f} ft/s (Mach {state0.airspeed/1116.45:.2f})")
     print(f"   Alpha:     {np.degrees(state0.alpha):.2f}°")
-    print(f"   Pitch:     {np.degrees(state0.get_euler_angles()[1]):.2f}°")
+    print(f"   Pitch:     {np.degrees(state0.euler_angles[1]):.2f}°")
     print()
 
     # === 8. Run Simulation ===
@@ -224,7 +224,7 @@ def main():
         # Update autopilot
         elevon_cmd = autopilot.update(
             current_altitude=-state.position[2],
-            current_pitch=state.get_euler_angles()[1],
+            current_pitch=state.euler_angles[1],
             current_pitch_rate=state.angular_rates[1],
             current_airspeed=state.airspeed,
             current_alpha=state.alpha,
@@ -243,26 +243,41 @@ def main():
         controls_history['elevon'].append(np.degrees(elevon_cmd))
         controls_history['throttle'].append(autopilot.throttle_trim)
 
+        # Define force function that combines aero + propulsion with current controls
+        def force_func(s):
+            # Get aerodynamic forces and moments
+            aero_forces, aero_moments = dynamics.aero_model.compute_forces_moments(s, controls)
+
+            # Get propulsion forces and moments
+            prop_forces, prop_moments = dynamics.propulsion_model.compute_thrust(
+                s, controls.get('throttle', 0.0)
+            )
+
+            # Combine
+            forces = aero_forces + prop_forces
+            moments = aero_moments + prop_moments
+
+            return forces, moments
+
         # Propagate dynamics (RK4 single step)
-        state_dot = dynamics.compute_derivatives(state, controls)
+        state_dot = dynamics.state_derivative(state, force_func)
         state_array = state.to_array()
 
         # RK4 integration
         k1 = state_dot
         state_temp = State()
         state_temp.from_array(state_array + 0.5 * dt * k1)
-        k2 = dynamics.compute_derivatives(state_temp, controls)
+        k2 = dynamics.state_derivative(state_temp, force_func)
 
         state_temp.from_array(state_array + 0.5 * dt * k2)
-        k3 = dynamics.compute_derivatives(state_temp, controls)
+        k3 = dynamics.state_derivative(state_temp, force_func)
 
         state_temp.from_array(state_array + dt * k3)
-        k4 = dynamics.compute_derivatives(state_temp, controls)
+        k4 = dynamics.state_derivative(state_temp, force_func)
 
         # Update state
         state_new_array = state_array + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
         state.from_array(state_new_array)
-        state.quaternion.normalize()
 
         t += dt
 
@@ -270,7 +285,7 @@ def main():
     time = np.array(time)
     positions = np.array([s.position for s in states])
     velocities = np.array([s.velocity_body for s in states])
-    euler_angles = np.array([s.get_euler_angles() for s in states])
+    euler_angles = np.array([s.euler_angles for s in states])
     airspeeds = np.array([s.airspeed for s in states])
     alphas = np.array([np.degrees(s.alpha) for s in states])
     elevons = np.array(controls_history['elevon'])
