@@ -126,8 +126,10 @@ class TestDynamicsCoverage:
 
         # Should have gravity acceleration in z
         assert state_dot.shape == (13,)
-        # Vertical acceleration should be negative (gravity)
-        assert state_dot[5] < 0  # w_dot
+        # Vertical acceleration should be positive (gravity adds downward in body frame)
+        # After gravity fix: vel_body_dot = forces/m - omega_cross_v + g_body
+        # With no forces and level attitude, gz = +g (down is positive in NED)
+        assert state_dot[5] > 0  # w_dot (positive = downward acceleration)
 
     def test_dynamics_with_forces(self):
         """Test dynamics with applied forces and moments."""

@@ -69,10 +69,10 @@ class TestGeometryParser:
         assert 0 < wing.aspect_ratio < 10  # Reasonable AR range
         assert 0 < wing.taper_ratio < 1    # Valid taper
 
-        # Check specific values for this geometry
-        assert abs(wing.span - 19.89) < 0.1      # ~19.89 ft span
-        assert abs(wing.area - 199.94) < 1.0     # ~199.94 ft² area
-        assert abs(wing.aspect_ratio - 1.98) < 0.1  # Low AR (delta wing)
+        # Check specific values for this geometry (updated nTop data)
+        assert abs(wing.span - 24.86) < 0.1      # ~24.86 ft span (updated)
+        assert abs(wing.area - 206.32) < 1.0     # ~206.32 ft² area (updated)
+        assert abs(wing.aspect_ratio - 2.996) < 0.1  # Low AR (delta wing, updated)
 
     def test_tail_geometry_estimation(self, data_path):
         """Test tail surface estimation."""
@@ -119,13 +119,13 @@ class TestMassProperties:
         mass_file = os.path.join(data_path, 'mass.csv')
         mass_props = read_mass_csv(mass_file)
 
-        # Check mass conversions
-        assert abs(mass_props.mass_lbm - 7555.639) < 0.01
-        assert abs(mass_props.mass_slugs - 234.84) < 0.1  # lbm / 32.174
-        assert abs(mass_props.mass_kg - 3427.18) < 1.0
+        # Check mass conversions (updated nTop data)
+        assert abs(mass_props.mass_lbm - 7365.43) < 0.01  # Updated mass
+        assert abs(mass_props.mass_slugs - 228.92) < 0.1  # lbm / 32.174
+        assert abs(mass_props.mass_kg - 3341.0) < 1.0   # Updated
 
-        # Check CG conversions
-        assert abs(mass_props.cg_ft[0] - 12.918) < 0.01  # inches / 12
+        # Check CG conversions (updated data)
+        assert abs(mass_props.cg_ft[0] - 12.85) < 0.01  # inches / 12 (154.15/12)
         assert len(mass_props.cg_m) == 3
 
         # Check inertia conversions
