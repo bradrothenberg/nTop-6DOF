@@ -11,7 +11,13 @@
       "Bash(git commit:*)",
       "Bash(timeout 30 sleep:*)",
       "Bash(timeout 120 python:*)",
-      "Bash(timeout 60 python:*)"
+      "Bash(timeout 60 python:*)",
+      "Bash(pip install:*)",
+      "Bash(timeout 180 python:*)",
+      "Bash(timeout 15 sleep:*)",
+      "Bash(timeout 45 sleep:*)",
+      "Bash(timeout 60 sleep:*)",
+      "Bash(timeout 90 sleep:*)"
     ],
     "deny": [],
     "ask": []
