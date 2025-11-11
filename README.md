@@ -4,305 +4,23 @@ A production-ready Python framework for 6-degree-of-freedom (6-DOF) flight dynam
 
 ## Project Status
 
-### Phase 1: AVL Geometry Generation & Validation ✅ (COMPLETED)
-
-### Phase 2: Core 6-DOF Dynamics ✅ (COMPLETED)
-
-**Completed Components:**
-
-1. **Quaternion Mathematics** ([src/core/quaternion.py](src/core/quaternion.py))
-   - ✅ Quaternion class with normalization
-   - ✅ Euler angle conversions
-   - ✅ Rotation matrix generation
-   - ✅ Quaternion multiplication and kinematics
-
-2. **State Vector** ([src/core/state.py](src/core/state.py))
-   - ✅ Complete 13-state vector (position, velocity, quaternion, angular rates)
-   - ✅ Array conversion for integration
-   - ✅ Derived properties (altitude, airspeed, alpha, beta)
-   - ✅ Euler angle utilities
-
-3. **6-DOF Dynamics** ([src/core/dynamics.py](src/core/dynamics.py))
-   - ✅ Rigid body equations of motion
-   - ✅ Force and moment aggregation
-   - ✅ Gravity model
-   - ✅ Pluggable aerodynamics and propulsion
-
-4. **Numerical Integrators** ([src/core/integrator.py](src/core/integrator.py))
-   - ✅ RK4 (4th-order Runge-Kutta)
-   - ✅ RK45 (adaptive step size)
-   - ✅ Integration loop with time history
-
-5. **Aerodynamic Models** ([src/core/aerodynamics.py](src/core/aerodynamics.py))
-   - ✅ Constant coefficient model
-   - ✅ Linear stability derivatives model
-   - ✅ AVL table-based model with interpolation
-   - ✅ Control surface effects
-
-6. **Propulsion Models** ([src/core/propulsion.py](src/core/propulsion.py))
-   - ✅ Constant thrust model
-   - ✅ Propeller model
-   - ✅ Thrust line offset moments
-   - ✅ Combined force/moment model
-
-### Phase 3: Supporting Systems ✅ (COMPLETED)
-
-**Completed Components:**
-
-1. **Standard Atmosphere** ([src/environment/atmosphere.py](src/environment/atmosphere.py))
-   - ✅ US Standard Atmosphere 1976 model
-   - ✅ Troposphere, stratosphere layers
-   - ✅ Temperature, pressure, density computation
-   - ✅ Speed of sound, viscosity
-   - ✅ Dynamic pressure, Mach number, Reynolds number utilities
-
-2. **Autopilot Controllers** ([src/control/autopilot.py](src/control/autopilot.py))
-   - ✅ Generic PID controller with anti-windup
-   - ✅ Altitude hold (cascaded pitch control)
-   - ✅ Heading hold (cascaded roll control)
-   - ✅ Airspeed hold (throttle control)
-
-3. **Trim Solver** ([src/control/trim.py](src/control/trim.py))
-   - ✅ Straight and level flight trim
-   - ✅ Coordinated turn trim
-   - ✅ Scipy-based optimization
-   - ✅ Residual minimization
-
-4. **AVL Aerodynamic Database** ([src/aero/avl_database.py](src/aero/avl_database.py))
-   - ✅ Load AVL sweep data from CSV
-   - ✅ Coefficient interpolation
-   - ✅ Force and moment computation
-   - ✅ Damping derivatives support
-
-### Phase 4: Analysis Tools ✅ (COMPLETED)
-
-**Completed Components:**
-
-1. **Linearization** ([src/analysis/stability.py](src/analysis/stability.py))
-   - ✅ Linearize dynamics about trim point
-   - ✅ Extract A, B, C, D state-space matrices
-   - ✅ Finite difference method for Jacobians
-   - ✅ Full 13-state, 4-input linearized model
-
-2. **Stability Analysis** ([src/analysis/stability.py](src/analysis/stability.py))
-   - ✅ Eigenvalue and eigenvector computation
-   - ✅ Dynamic mode identification
-   - ✅ Mode classification (phugoid, short period, dutch roll, roll, spiral)
-   - ✅ Damping ratio and natural frequency extraction
-   - ✅ Stability assessment
-
-3. **Frequency Response** ([src/analysis/frequency.py](src/analysis/frequency.py))
-   - ✅ Bode plot computation (magnitude and phase)
-   - ✅ Step response analysis
-   - ✅ Impulse response analysis
-   - ✅ Gain and phase margin calculation
-   - ✅ Transfer function utilities
-
-### Phase 5: I/O and Configuration ✅ (COMPLETED)
-
-**Completed Components:**
-
-1. **YAML Configuration System** ([src/io/config.py](src/io/config.py))
-   - ✅ AircraftConfig class for structured aircraft definitions
-   - ✅ Load/save aircraft configurations from YAML
-   - ✅ Automatic model creation from config
-   - ✅ Support for multiple aerodynamic model types
-   - ✅ Support for multiple propulsion model types
-   - ✅ Initial state configuration
-
-2. **AVL Output Parsers** ([src/io/avl_parser.py](src/io/avl_parser.py))
-   - ✅ Parse AVL stability derivatives (.st files)
-   - ✅ Parse AVL forces and moments (.ft files)
-   - ✅ Parse AVL run cases (.run files)
-   - ✅ Parse AVL mass files (.mass files)
-   - ✅ Extract stability derivatives from console output
-
-3. **Example Configurations** ([config/](config/))
-   - ✅ nTop UAV configuration (ntop_uav.yaml)
-   - ✅ Complete mass, inertia, reference geometry
-   - ✅ Stability and control derivatives
-   - ✅ Propulsion parameters
-   - ✅ Initial state definitions
-
-### Phase 6: Visualization ✅ (COMPLETED)
-
-**Completed Components:**
-
-1. **Standard Plotting Functions** ([src/visualization/plotting.py](src/visualization/plotting.py))
-   - ✅ 3D trajectory visualization with markers
-   - ✅ State variable time histories (position, velocity, angles, rates)
-   - ✅ Control input time histories
-   - ✅ Force and moment time histories
-   - ✅ Trim envelope plotting
-   - ✅ Configurable styling and formatting
-
-2. **Animation Capabilities** ([src/visualization/animation.py](src/visualization/animation.py))
-   - ✅ TrajectoryAnimation class for 3D animated flight paths
-   - ✅ Attitude vector visualization (body frame orientation)
-   - ✅ Trajectory comparison animations
-   - ✅ GIF and MP4 export support
-   - ✅ Real-time animation playback
-
-3. **Visualization Examples** ([examples/visualization_demo.py](examples/visualization_demo.py))
-   - ✅ Complete multi-axis maneuver demonstration
-   - ✅ Autopilot-controlled flight with climb and turn
-   - ✅ Comprehensive plotting workflow
-   - ✅ Optional animation generation
-
----
-
-### Phase 1: AVL Geometry Generation & Validation ✅ (COMPLETED)
-
-**Completed Components:**
-
-1. **Geometry Analysis** ([src/io/geometry.py](src/io/geometry.py))
-   - ✅ CSV point parser for LE/TE data
-   - ✅ Wing geometry calculator (span, area, MAC, AR, sweep, taper, dihedral)
-   - ✅ Tail surface estimator using volume coefficients
-   - ✅ Unit conversion (inches → feet)
-
-2. **Mass Properties** ([src/io/mass_properties.py](src/io/mass_properties.py))
-   - ✅ Mass converter (lbm → slugs, kg)
-   - ✅ Inertia converter (lbm·in² → slug·ft², kg·m²)
-   - ✅ CG location converter (inches → feet, meters)
-   - ✅ AVL .mass file generator
-
-3. **AVL Geometry Generator** ([src/aero/avl_geometry.py](src/aero/avl_geometry.py))
-   - ✅ Complete AVL .avl file writer
-   - ✅ Wing surface from LE/TE points
-   - ✅ Horizontal tail with elevator
-   - ✅ Vertical tail with rudder
-   - ✅ Flaperon control surfaces (80% chord, 75% span)
-   - ✅ NACA 6-series airfoil integration
-
-4. **Flight Conditions** ([src/aero/avl_run_cases.py](src/aero/avl_run_cases.py))
-   - ✅ US Standard Atmosphere model
-   - ✅ AVL .run file generator
-   - ✅ Cruise condition (Mach 0.25 @ 20,000 ft)
-   - ✅ Climb condition (Mach 0.20 @ 10,000 ft)
-   - ✅ Landing condition (Mach 0.15 @ sea level)
-
-5. **AVL Interface** ([src/aero/avl_interface.py](src/aero/avl_interface.py))
-   - ✅ Subprocess interface to AVL executable
-   - ✅ Command sequence generator
-   - ✅ Output file parser (.ft, .st files)
-   - ✅ Alpha sweep capability
-   - ✅ Results plotting
-
-6. **Project Structure**
-   - ✅ Modular directory layout
-   - ✅ requirements.txt with dependencies
-   - ✅ Generated files in avl_files/
-
----
-
-## Aircraft Configuration
-
-### Wing Geometry (from nTop export)
-
-| Parameter | Value | Units |
-|-----------|-------|-------|
-| **Span** | 19.89 | ft |
-| **Area** | 199.94 | ft² |
-| **Mean Aerodynamic Chord (MAC)** | 26.69 | ft |
-| **Root Chord** | 22.40 | ft |
-| **Tip Chord** | 0.20 | ft |
-| **Taper Ratio** | 0.009 | - |
-| **Aspect Ratio** | 1.98 | - |
-| **LE Sweep** | 56.64 | deg |
-| **c/4 Sweep** | 45.18 | deg |
-| **Dihedral** | 6.00 | deg |
-
-**Notes:**
-- Very low aspect ratio (1.98) indicates delta wing or highly swept design
-- Extreme taper ratio (0.009) means nearly pointed wing tips
-- High sweep angles (56.6° LE) typical of high-speed UAV or flying wing
-
-### Horizontal Tail (Estimated)
-
-| Parameter | Value | Units |
-|-----------|-------|-------|
-| **Area** | 47.99 | ft² |
-| **Span** | 8.72 | ft |
-| **Chord** | 5.51 | ft |
-| **Aspect Ratio** | 1.58 | - |
-| **Volume Coefficient (V_H)** | 0.60 | - |
-| **Moment Arm** | 66.72 | ft |
-| **X Position** | 90.68 | ft |
-
-### Vertical Tail (Estimated)
-
-| Parameter | Value | Units |
-|-----------|-------|-------|
-| **Area** | 2.98 | ft² |
-| **Height** | 2.11 | ft |
-| **Chord** | 1.41 | ft |
-| **Aspect Ratio** | 1.50 | - |
-| **Volume Coefficient (V_V)** | 0.05 | - |
-| **Moment Arm** | 66.72 | ft |
-| **X Position** | 92.73 | ft |
-
-### Mass Properties
-
-| Parameter | Value | Units |
-|-----------|-------|-------|
-| **Mass** | 7,555.6 lbm / 234.8 slugs / 3,427.2 kg |
-| **CG Location** | (12.92, 0.00, 0.05) | ft |
-| **Ixx** | 14,908.4 | slug·ft² |
-| **Iyy** | 2,318.4 | slug·ft² |
-| **Izz** | 17,226.9 | slug·ft² |
-
-### Control Surfaces
-
-| Surface | Hinge Line | Span Extent | Type |
-|---------|------------|-------------|------|
-| **Flaperons** | 80% chord | 75% semispan | Antisymmetric (roll) |
-| **Elevator** | 70% chord | Full span | Symmetric (pitch) |
-| **Rudder** | 70% chord | Full height | Yaw |
-
-### Airfoils
-
-- **Wing**: NACA 64-212 (constant along span)
-- **Horizontal Tail**: NACA 0012
-- **Vertical Tail**: NACA 0012
-
----
-
-## Flight Envelope
-
-| Condition | Altitude | Mach | Velocity | Density | Purpose |
-|-----------|----------|------|----------|---------|---------|
-| **Cruise** | 20,000 ft | 0.25 | 259.2 ft/s | 0.001267 slug/ft³ | Loiter |
-| **Climb** | 10,000 ft | 0.20 | 215.4 ft/s | 0.001756 slug/ft³ | Ascent |
-| **Landing** | 0 ft | 0.15 | 167.4 ft/s | 0.002377 slug/ft³ | Approach |
-
----
-
-## Generated Files
-
-### AVL Files (in avl_files/)
-
-1. **uav.avl** - Main geometry file
-   - Wing with 7 spanwise sections
-   - Horizontal tail (2 sections)
-   - Vertical tail (2 sections)
-   - Control surface definitions
-   - Reference values (Sref, Cref, Bref, CG)
-
-2. **uav.mass** - Mass properties file
-   - Total mass in slugs
-   - CG location in feet
-   - Inertia tensor in slug·ft²
-
-3. **uav.run** - Run cases file
-   - 3 flight conditions defined
-   - Atmospheric properties
-   - Mass/inertia for each case
-
-### Testing Scripts
-
-1. **run_avl_simple.bat** - Windows batch file to run AVL manually
-2. **test_avl.bat** - AVL geometry validation script
+✅ **ALL CORE PHASES COMPLETE** - Production-ready framework with 164 passing tests
+
+For detailed phase-by-phase status, see [Plan/status.md](Plan/status.md)
+
+**Key Achievements:**
+- ✅ Complete 6-DOF dynamics with quaternion attitude
+- ✅ Flying wing configuration with stable controlled flight
+- ✅ FJ-44 turbofan integration with trim solver
+- ✅ Triple-loop cascaded autopilot with stall protection
+- ✅ Comprehensive testing (164 tests, all passing)
+- ✅ Extensive documentation (1,100+ lines)
+
+**Recent Updates:**
+- Enhanced autopilot for flying wing stability
+- Comprehensive user and tuning guides
+- Full unit test coverage for autopilot controllers
+- Performance benchmarks and validation
 
 ---
 
@@ -314,133 +32,85 @@ A production-ready Python framework for 6-degree-of-freedom (6-DOF) flight dynam
 pip install -r requirements.txt
 ```
 
-Required packages:
-- numpy
-- scipy
-- matplotlib
-- pandas
-- pyyaml
-- pytest
+### 2. Run Flying Wing Demo (Recommended)
 
-### 2. Generate AVL Geometry from nTop Data
-
-```python
-from src.aero.avl_geometry import generate_avl_geometry_from_csv
-
-# Generate AVL files from CSV exports
-wing, h_tail, v_tail, mass_props = generate_avl_geometry_from_csv(
-    le_file="Data/LEpts.csv",
-    te_file="Data/TEpts.csv",
-    mass_file="Data/mass.csv",
-    output_file="avl_files/uav.avl",
-    aircraft_name="nTop_UAV"
-)
-```
-
-### 3. Run AVL Analysis
-
-#### Option A: Manual (Windows)
 ```bash
-run_avl_simple.bat
+python examples/flyingwing_stable_flight.py
 ```
 
-#### Option B: Python Interface
-```python
-from src.aero.avl_interface import AVLInterface
+Demonstrates the enhanced triple-loop cascaded autopilot achieving stable controlled flight.
 
-avl = AVLInterface(r"C:\path\to\avl.exe")
+### 3. Run Tests
 
-# Single analysis point
-result = avl.run_avl_case(
-    avl_file="avl_files/uav.avl",
-    mass_file="avl_files/uav.mass",
-    alpha=2.0,
-    beta=0.0,
-    mach=0.25
-)
-
-print(f"CL = {result.CL}, CD = {result.CD}, L/D = {result.CL/result.CD}")
-
-# Alpha sweep
-results = avl.run_alpha_sweep(
-    avl_file="avl_files/uav.avl",
-    mass_file="avl_files/uav.mass",
-    alpha_range=(-5, 15, 1),
-    mach=0.25
-)
-```
-
-### 4. Analyze Wing Geometry
-
-```python
-from src.io.geometry import read_csv_points, compute_wing_geometry
-
-le_points = read_csv_points("Data/LEpts.csv", units='inches')
-te_points = read_csv_points("Data/TEpts.csv", units='inches')
-
-wing = compute_wing_geometry(le_points, te_points)
-
-print(f"Wing Span: {wing.span:.2f} ft")
-print(f"Wing Area: {wing.area:.2f} ft²")
-print(f"Aspect Ratio: {wing.aspect_ratio:.2f}")
-```
-
----
-
-## Testing
-
-### Test Coverage
-
-All phases have comprehensive test suites:
-
-- **Phase 1 Tests** ([tests/test_phase1.py](tests/test_phase1.py)): 11 tests for AVL geometry generation
-- **Phase 2 Tests** ([tests/test_phase2.py](tests/test_phase2.py)): 23 tests for 6-DOF dynamics
-- **Phase 3 Tests** ([tests/test_phase3.py](tests/test_phase3.py)): 22 tests for supporting systems
-- **Phase 4 Tests** ([tests/test_phase4.py](tests/test_phase4.py)): 11 tests for analysis tools
-- **Phase 5 Tests** ([tests/test_phase5.py](tests/test_phase5.py)): 17 tests for I/O and configuration
-- **Phase 6 Tests** ([tests/test_phase6.py](tests/test_phase6.py)): 19 tests for visualization
-- **Core Coverage Tests** ([tests/test_core_coverage.py](tests/test_core_coverage.py)): 29 tests for enhanced coverage
-
-Run all tests:
 ```bash
 pytest tests/ -v
 ```
 
-Total: **132 passing tests** (11+23+22+11+17+19+29 across all phases)
+All 164 tests should pass ✅
+
+---
+
+## Documentation
+
+### User Guides
+- **[FLYING_WING_AUTOPILOT_GUIDE.md](FLYING_WING_AUTOPILOT_GUIDE.md)** - Complete user guide (500+ lines)
+- **[AUTOPILOT_TUNING_GUIDE.md](AUTOPILOT_TUNING_GUIDE.md)** - Practical tuning guide (600+ lines)
+
+### Technical Documentation
+- **[Plan/status.md](Plan/status.md)** - Detailed project status
+- **[TRIM_STATUS.md](TRIM_STATUS.md)** - Trim analysis
+- **[RK4_AUTOPILOT_RESULTS.md](RK4_AUTOPILOT_RESULTS.md)** - Integration testing
 
 ---
 
 ## Examples
 
-### Phase 2: Basic 6-DOF Simulation
-```bash
-python examples/simple_6dof_sim.py
-```
-Demonstrates complete 6-DOF simulation with quaternion attitude, RK4 integration, and basic aerodynamics.
+| Example | Description |
+|---------|-------------|
+| **flyingwing_stable_flight.py** | Flying wing with enhanced autopilot (recommended) |
+| simple_6dof_sim.py | Basic 6-DOF simulation |
+| autopilot_demo.py | Altitude/heading/airspeed hold |
+| stability_analysis_demo.py | Linearization and mode analysis |
+| config_demo.py | YAML configuration system |
+| visualization_demo.py | 3D plots and animations |
 
-### Phase 3: Autopilot Demonstration
-```bash
-python examples/autopilot_demo.py
-```
-Demonstrates altitude hold, heading hold, and airspeed hold autopilots with standard atmosphere integration.
+---
 
-### Phase 4: Stability Analysis
-```bash
-python examples/stability_analysis_demo.py
-```
-Demonstrates linearization, eigenvalue analysis, mode identification, and frequency response (Bode plots, step responses).
+## Aircraft Configuration
 
-### Phase 5: Configuration System
-```bash
-python examples/config_demo.py
-```
-Demonstrates YAML-based aircraft configuration, automatic model creation, initial state setup, and configuration save/load.
+### Wing Geometry (from nTop)
 
-### Phase 6: Visualization and Animation
-```bash
-python examples/visualization_demo.py
-```
-Demonstrates comprehensive visualization capabilities including 3D trajectory plots, state variable time histories, control input plots, force/moment plots, and optional animated trajectory with attitude vectors. Simulates a multi-axis maneuver with altitude hold, heading hold, and airspeed hold autopilots.
+| Parameter | Value |
+|-----------|-------|
+| Span | 19.89 ft |
+| Area | 199.94 ft² |
+| MAC | 26.69 ft |
+| Aspect Ratio | 1.98 |
+| LE Sweep | 56.64° |
+| Taper Ratio | 0.009 |
+
+### Mass Properties
+
+| Parameter | Value |
+|-----------|-------|
+| Mass | 234.8 slugs (7,555.6 lbm) |
+| CG | (12.92, 0.00, 0.05) ft |
+| Ixx, Iyy, Izz | 14,908 / 2,318 / 17,227 slug·ft² |
+
+---
+
+## Testing
+
+**Total: 164 passing tests** ✅
+
+- Phase 1 (AVL Geometry): 11 tests
+- Phase 2 (6-DOF Dynamics): 23 tests
+- Phase 3 (Supporting Systems): 22 tests
+- Phase 4 (Analysis Tools): 11 tests
+- Phase 5 (I/O & Configuration): 17 tests
+- Phase 6 (Visualization): 19 tests
+- Core Coverage: 29 tests
+- Autopilot Controllers: 32 tests
 
 ---
 
@@ -448,156 +118,39 @@ Demonstrates comprehensive visualization capabilities including 3D trajectory pl
 
 ```
 nTop6DOF/
-├── src/
-│   ├── core/               # ✅ 6-DOF dynamics
-│   │   ├── quaternion.py       # ✅ Quaternion mathematics
-│   │   ├── state.py            # ✅ State vector
-│   │   ├── dynamics.py         # ✅ Rigid body dynamics
-│   │   ├── integrator.py       # ✅ RK4, RK45 integrators
-│   │   ├── aerodynamics.py     # ✅ Aero models
-│   │   └── propulsion.py       # ✅ Propulsion models
-│   ├── environment/        # ✅ Atmosphere models
-│   │   └── atmosphere.py       # ✅ US Standard Atmosphere 1976
-│   ├── control/            # ✅ Autopilot and trim
-│   │   ├── autopilot.py        # ✅ PID controllers
-│   │   └── trim.py             # ✅ Trim solver
-│   ├── analysis/           # ✅ Stability and frequency analysis
-│   │   ├── stability.py        # ✅ Linearization and modes
-│   │   └── frequency.py        # ✅ Bode plots, step response
-│   ├── aero/
-│   │   ├── avl_geometry.py     # ✅ AVL file generator
-│   │   ├── avl_interface.py    # ✅ AVL Python interface
-│   │   ├── avl_run_cases.py    # ✅ Run case generator
-│   │   ├── avl_database.py     # ✅ AVL data interpolation
-│   │   └── xfoil_interface.py  # TODO
-│   ├── io/                 # ✅ I/O and configuration
-│   │   ├── config.py           # ✅ YAML configuration system
-│   │   ├── avl_parser.py       # ✅ AVL output parsers
-│   │   ├── geometry.py         # ✅ LE/TE CSV parser
-│   │   └── mass_properties.py  # ✅ Mass converter
-│   └── visualization/          # TODO
-├── tests/
-│   ├── test_phase1.py          # ✅ Phase 1 tests (11 tests)
-│   ├── test_phase2.py          # ✅ Phase 2 tests (23 tests)
-│   ├── test_phase3.py          # ✅ Phase 3 tests (22 tests)
-│   ├── test_phase4.py          # ✅ Phase 4 tests (11 tests)
-│   └── test_phase5.py          # ✅ Phase 5 tests (17 tests)
-├── examples/
-│   ├── simple_6dof_sim.py      # ✅ Basic 6-DOF simulation
-│   ├── autopilot_demo.py       # ✅ Autopilot demonstration
-│   ├── stability_analysis_demo.py  # ✅ Stability analysis
-│   └── config_demo.py          # ✅ Configuration system
-├── config/                     # ✅ Configuration files
-│   ├── ntop_uav.yaml           # ✅ nTop UAV configuration
-│   └── example_aircraft.yaml   # ✅ Example configuration
-├── Data/
-│   ├── LEpts.csv              # ✅ Wing LE points (from nTop)
-│   ├── TEpts.csv              # ✅ Wing TE points (from nTop)
-│   └── mass.csv               # ✅ Mass properties (from nTop)
-├── Docs/
-│   ├── avl_doc.txt            # AVL documentation
-│   └── AVL_User_Primer.pdf
-├── Plan/
-│   └── flight_6dof_project_plan.md
-├── avl_files/
-│   ├── uav.avl                        # ✅ Generated AVL geometry
-│   ├── uav.mass                       # ✅ Generated mass file
-│   ├── uav.run                        # ✅ Generated run cases
-│   └── sample_aero_database.csv       # ✅ Sample aero database
-├── requirements.txt           # ✅ Python dependencies
-└── README.md                  # This file
-```
-
----
-
-## Next Steps (Phase 6 & Beyond)
-
-### Phase 6: Visualization (Planned)
-1. **Real-time Flight Visualization**
-   - 3D aircraft animation
-   - Flight path plotting
-   - State variable time histories
-   - Interactive parameter adjustment
-2. **Analysis Visualization**
-   - Mode shape visualization
-   - Frequency response plots (Bode, Nyquist)
-   - Trim map generation
-   - V-n diagrams
-
-### Medium Term:
-- XFOIL integration for 2D airfoil polars
-- Advanced propulsion models (turbofan, turbojet)
-- Advanced control laws (LQR, MPC)
-- Optimization interface for design studies
-
-### Long Term:
-- nTop workflow automation and parametric design sweeps
-- Wind/turbulence models and atmospheric disturbances
-- Hardware-in-the-loop (HIL) testing
-- Real-time flight control system integration
-
----
-
-## Important Notes
-
-### Tail Geometry Assumptions
-**⚠️ Current tail geometry is ESTIMATED using volume coefficients:**
-- Horizontal tail: V_H = 0.6
-- Vertical tail: V_V = 0.05
-- Tail moment arms: 2.5 × wing MAC
-
-**You should export tail surfaces from nTop using the same LE/TE point method:**
-1. Export horizontal tail LEpts and TEpts to separate CSV files
-2. Export vertical tail LEpts and TEpts to separate CSV files
-3. Update avl_geometry.py to use actual geometry instead of estimates
-
-### Airfoil Selection
-Currently using **NACA 64-212** for the wing. For optimal performance at Mach 0.25 cruise:
-- Consider NACA 64-series with design CL matching cruise condition
-- Run XFOIL to generate polars if custom airfoil is needed
-- Update airfoil parameter in avl_geometry.py
-
-### Units Convention
-- **Input**: US Customary (inches, lbm, lbm·in²)
-- **AVL**: US Customary (feet, slugs, slug·ft²)
-- **6-DOF (future)**: Can use either SI or US Customary
-
-### AVL Path
-Update AVL executable path in scripts:
-```python
-avl_exe = r"C:\Users\bradrothenberg\OneDrive - nTop\Sync\AVL\avl.exe"
+├── src/               # Core framework
+│   ├── core/          # 6-DOF dynamics, quaternions, integrators
+│   ├── environment/   # Standard atmosphere
+│   ├── control/       # Autopilot and trim solvers
+│   ├── analysis/      # Stability and frequency analysis
+│   ├── aero/          # AVL interface and database
+│   ├── io/            # Configuration and parsers
+│   ├── visualization/ # Plotting and animation
+│   └── simulation/    # Enhanced trim solvers
+├── tests/             # Comprehensive test suite (164 tests)
+├── examples/          # Demonstration scripts
+├── config/            # YAML configuration files
+├── Data/              # nTop exports (LE/TE points, mass)
+├── Plan/              # Project planning and status
+└── avl_files/         # Generated AVL files
 ```
 
 ---
 
 ## References
 
-- **AVL Documentation**: `Docs/avl_doc.txt`, `Docs/AVL_User_Primer.pdf`
-- **Project Plan**: `Plan/flight_6dof_project_plan.md`
 - **AVL Website**: http://web.mit.edu/drela/Public/web/avl/
-- **XFOIL Website**: https://web.mit.edu/drela/Public/web/xfoil/
-
----
-
-## Contact & Support
-
-For issues with:
-- **nTop geometry export**: Check LE/TE point extraction from nTop
-- **AVL errors**: Verify .avl file format, check AVL documentation
-- **Python errors**: Ensure all dependencies are installed
-- **Framework design**: Review `Plan/flight_6dof_project_plan.md`
+- **Project Plan**: [Plan/flight_6dof_project_plan.md](Plan/flight_6dof_project_plan.md)
+- **Project Status**: [Plan/status.md](Plan/status.md)
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details.
-
-Copyright (c) 2025 Brad Rothenberg
+MIT License - Copyright (c) 2025 Brad Rothenberg
 
 ---
 
-**Last Updated**: 2025-01-10
-**Status**: Phases 1-5 Complete - Full Framework with Configuration System
-**Version**: 0.5.0-alpha
-**Test Coverage**: 84 passing tests across 5 phases
+**Last Updated**: 2025-11-10  
+**Version**: 0.6.0-alpha  
+**Test Coverage**: 164 passing tests ✅
