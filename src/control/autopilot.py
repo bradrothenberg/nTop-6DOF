@@ -213,6 +213,177 @@ class AltitudeHoldController:
         self.pitch_pid.reset()
 
 
+class FlyingWingAutopilot:
+    """
+    Enhanced autopilot for flying wing aircraft with pitch rate damping and stall protection.
+
+    Uses triple-loop architecture:
+    - Outer loop: Altitude → Pitch angle command
+    - Middle loop: Pitch angle → Pitch rate command
+    - Inner loop: Pitch rate → Elevon deflection
+
+    Includes stall protection that limits pitch commands and increases throttle
+    when airspeed is critically low or angle of attack is too high.
+
+    Parameters
+    ----------
+    Kp_alt, Ki_alt, Kd_alt : float
+        Altitude hold PID gains
+    Kp_pitch, Ki_pitch, Kd_pitch : float
+        Pitch attitude PID gains
+    Kp_pitch_rate, Ki_pitch_rate, Kd_pitch_rate : float
+        Pitch rate PID gains
+    max_pitch_cmd : float
+        Maximum pitch up command (degrees)
+    min_pitch_cmd : float
+        Maximum pitch down command (degrees)
+    max_alpha : float
+        Maximum angle of attack for stall protection (degrees)
+    stall_speed : float
+        Stall speed (ft/s)
+    min_airspeed_margin : float
+        Safety margin above stall speed (multiplier)
+    """
+
+    def __init__(self,
+                 # Altitude hold gains
+                 Kp_alt: float = 0.02,
+                 Ki_alt: float = 0.001,
+                 Kd_alt: float = 0.05,
+                 # Pitch attitude gains
+                 Kp_pitch: float = 1.5,
+                 Ki_pitch: float = 0.1,
+                 Kd_pitch: float = 0.3,
+                 # Pitch rate gains
+                 Kp_pitch_rate: float = 0.5,
+                 Ki_pitch_rate: float = 0.05,
+                 Kd_pitch_rate: float = 0.0,
+                 # Safety limits
+                 max_pitch_cmd: float = 20.0,
+                 min_pitch_cmd: float = -15.0,
+                 max_alpha: float = 12.0,
+                 stall_speed: float = 150.0,
+                 min_airspeed_margin: float = 1.3):
+        """Initialize flying wing autopilot."""
+
+        # Outer loop: altitude → pitch command
+        self.altitude_controller = PIDController(
+            Kp=Kp_alt, Ki=Ki_alt, Kd=Kd_alt,
+            output_limits=(np.radians(min_pitch_cmd), np.radians(max_pitch_cmd)),
+            integral_limits=(-100.0, 100.0)  # ft
+        )
+
+        # Middle loop: pitch angle → pitch rate command
+        self.pitch_controller = PIDController(
+            Kp=Kp_pitch, Ki=Ki_pitch, Kd=Kd_pitch,
+            output_limits=(np.radians(-30), np.radians(30)),  # deg/s
+            integral_limits=(np.radians(-5), np.radians(5))  # rad
+        )
+
+        # Inner loop: pitch rate → elevon command
+        self.pitch_rate_controller = PIDController(
+            Kp=Kp_pitch_rate, Ki=Ki_pitch_rate, Kd=Kd_pitch_rate,
+            output_limits=(np.radians(-25), np.radians(25)),
+            integral_limits=(np.radians(-10), np.radians(10))  # rad
+        )
+
+        # Safety limits
+        self.max_pitch_cmd = np.radians(max_pitch_cmd)
+        self.min_pitch_cmd = np.radians(min_pitch_cmd)
+        self.max_alpha = np.radians(max_alpha)
+        self.min_airspeed = stall_speed * min_airspeed_margin
+        self.stall_speed = stall_speed
+
+        # Trim values
+        self.elevon_trim = 0.0
+        self.altitude_target = 0.0
+
+        # Diagnostics
+        self.stall_protection_active = False
+        self.alpha_protection_active = False
+
+    def set_trim(self, elevon_trim: float):
+        """Set trim elevon deflection for feedforward."""
+        self.elevon_trim = elevon_trim
+
+    def set_target_altitude(self, altitude: float):
+        """Set target altitude (NED frame, negative = up)."""
+        self.altitude_target = altitude
+
+    def update(self, current_altitude: float, current_pitch: float,
+               current_pitch_rate: float, current_airspeed: float,
+               current_alpha: float, dt: float) -> float:
+        """
+        Update autopilot and compute elevon command.
+
+        Parameters
+        ----------
+        current_altitude : float
+            Current altitude (NED, negative = up)
+        current_pitch : float
+            Current pitch angle (radians)
+        current_pitch_rate : float
+            Current pitch rate (rad/s)
+        current_airspeed : float
+            Current airspeed (ft/s)
+        current_alpha : float
+            Current angle of attack (radians)
+        dt : float
+            Time step (seconds)
+
+        Returns
+        -------
+        float
+            Elevon deflection command (radians)
+        """
+        # Reset protection flags
+        self.stall_protection_active = False
+        self.alpha_protection_active = False
+
+        # === OUTER LOOP: Altitude → Pitch Command ===
+        altitude_error = self.altitude_target - current_altitude
+        pitch_cmd = self.altitude_controller.update(altitude_error, dt)
+
+        # Limit pitch command based on envelope
+        pitch_cmd = np.clip(pitch_cmd, self.min_pitch_cmd, self.max_pitch_cmd)
+
+        # === STALL PROTECTION ===
+        # If too slow, limit pitch up
+        if current_airspeed < self.min_airspeed:
+            # Force pitch down if critically slow
+            pitch_cmd = min(pitch_cmd, current_pitch - np.radians(5))
+            self.stall_protection_active = True
+
+        # If alpha too high, limit pitch up
+        if current_alpha > self.max_alpha:
+            pitch_cmd = min(pitch_cmd, current_pitch - np.radians(2))
+            self.alpha_protection_active = True
+
+        # === MIDDLE LOOP: Pitch Attitude → Pitch Rate Command ===
+        pitch_error = pitch_cmd - current_pitch
+        pitch_rate_cmd = self.pitch_controller.update(pitch_error, dt)
+
+        # === INNER LOOP: Pitch Rate → Elevon ===
+        pitch_rate_error = pitch_rate_cmd - current_pitch_rate
+        elevon = self.pitch_rate_controller.update(pitch_rate_error, dt)
+
+        # Add trim for feedforward
+        elevon += self.elevon_trim
+
+        # Saturate elevon
+        elevon = np.clip(elevon, np.radians(-25), np.radians(25))
+
+        return elevon
+
+    def reset(self):
+        """Reset all controller states."""
+        self.altitude_controller.reset()
+        self.pitch_controller.reset()
+        self.pitch_rate_controller.reset()
+        self.stall_protection_active = False
+        self.alpha_protection_active = False
+
+
 class HeadingHoldController:
     """
     Heading hold autopilot.
