@@ -10,7 +10,8 @@
       "Bash(timeout 300 python:*)",
       "Bash(git commit:*)",
       "Bash(timeout 30 sleep:*)",
-      "Bash(timeout 120 python:*)"
+      "Bash(timeout 120 python:*)",
+      "Bash(timeout 60 python:*)"
     ],
     "deny": [],
     "ask": []
