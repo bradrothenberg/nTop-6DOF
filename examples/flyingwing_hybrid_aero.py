@@ -95,14 +95,14 @@ def main():
         'Cm_alpha': -0.079668,  # Static stability
         'Cm_q': -0.347,         # Pitch damping (strong for flying wing)
 
-        # Lateral-directional
-        'Cl_beta': -0.1,
-        'Cl_p': -0.4,
-        'Cl_r': 0.1,
-        'Cn_beta': 0.1,
-        'Cn_p': -0.05,
-        'Cn_r': -0.001,  # Weak for flying wing
-        'CY_beta': -0.2,
+        # Lateral-directional (from AVL analysis)
+        'Cl_beta': -0.028108,   # Dihedral effect (weak for flying wing)
+        'Cl_p': -0.109230,      # Roll damping
+        'Cl_r': 0.019228,       # Roll due to yaw rate
+        'Cn_beta': -0.000119,   # Directional stability (UNSTABLE - negative!)
+        'Cn_p': -0.000752,      # Yaw due to roll rate
+        'Cn_r': -0.001030,      # Yaw damping (very weak)
+        'CY_beta': -0.016955,   # Side force due to sideslip (from CYp actually)
 
         # Control effectiveness (from AVL)
         'Cm_elevon': -0.02,      # Pitch control
@@ -219,10 +219,16 @@ def main():
     state = state0.copy()
     t = 0.0
 
+    # Simple roll damper gains (needed for flying wing stability)
+    # Flying wings have weak natural roll damping (Clp=-0.109) and negative directional stability (Cnb<0)
+    # so they require strong active roll stabilization
+    Kp_roll = 2.0   # Roll angle feedback (increased 4x)
+    Kp_roll_rate = 1.0  # Roll rate damping (increased 5x)
+
     # Simulation loop with autopilot
     while t <= t_final:
-        # Update autopilot
-        elevon_cmd = autopilot.update(
+        # Update autopilot (pitch control only)
+        elevon_pitch_cmd = autopilot.update(
             current_altitude=-state.position[2],
             current_pitch=state.euler_angles[1],
             current_pitch_rate=state.angular_rates[1],
@@ -230,6 +236,20 @@ def main():
             current_alpha=state.alpha,
             dt=dt
         )
+
+        # Add simple roll stabilization (wings-level control)
+        # Flying wings need active roll damping due to weak natural damping
+        roll = state.euler_angles[0]  # phi
+        roll_rate = state.angular_rates[0]  # p
+
+        # Roll correction: drive roll angle to zero with rate damping
+        roll_correction = -Kp_roll * roll - Kp_roll_rate * roll_rate
+
+        # Total elevon command (pitch + roll)
+        elevon_cmd = elevon_pitch_cmd + roll_correction
+
+        # Limit total elevon deflection
+        elevon_cmd = np.clip(elevon_cmd, np.radians(-25), np.radians(25))
 
         # Control inputs
         controls = {
