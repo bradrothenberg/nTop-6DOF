@@ -4,11 +4,12 @@ Aerodynamic models for 6-DOF flight dynamics.
 Provides:
 - Base aerodynamic model interface
 - Table-based lookup for AVL-generated data
+- XFOIL polar-based model with Reynolds number effects
 - Simple coefficient models for testing
 """
 
 import numpy as np
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Optional
 from abc import ABC, abstractmethod
 
 # Handle imports
@@ -479,6 +480,286 @@ class AVLTableModel(AeroModel):
             # Stratosphere (simplified)
             rho = 0.000706 * np.exp(-(h - 36000) / 20806)
         return rho
+
+
+class XFOILAeroModel(AeroModel):
+    """
+    Aerodynamic model using XFOIL 2D airfoil polars with Reynolds number effects.
+
+    This model:
+    - Uses XFOIL polar database for section coefficients (CL, CD, CM)
+    - Interpolates between Reynolds numbers based on local flow conditions
+    - Applies 3D corrections using Prandtl lifting-line theory
+    - Includes stability derivatives for moments
+
+    Best for: High-fidelity airfoil performance with viscous effects
+    """
+
+    def __init__(
+        self,
+        polar_database,  # PolarDatabase object from xfoil_database.py
+        S_ref: float,
+        c_ref: float,
+        b_ref: float,
+        aspect_ratio: float,
+        oswald_efficiency: float = 0.85,
+        rho: Optional[float] = None
+    ):
+        """
+        Initialize XFOIL-based aerodynamic model.
+
+        Parameters
+        ----------
+        polar_database : PolarDatabase
+            XFOIL polar database for the airfoil
+        S_ref : float
+            Reference area (ft²)
+        c_ref : float
+            Reference (mean aerodynamic) chord (ft)
+        b_ref : float
+            Reference span (ft)
+        aspect_ratio : float
+            Wing aspect ratio (b²/S)
+        oswald_efficiency : float
+            Oswald efficiency factor for induced drag (default 0.85)
+        rho : float, optional
+            Air density (slug/ft³). If None, will use atmosphere model.
+        """
+        self.polar_db = polar_database
+        self.S_ref = S_ref
+        self.c_ref = c_ref
+        self.b_ref = b_ref
+        self.AR = aspect_ratio
+        self.e = oswald_efficiency
+        self.rho = rho
+
+        # Stability derivatives (user should set or derive from polars)
+        self.Cm_q = -10.0       # Pitch damping
+        self.Cl_beta = -0.1     # Roll due to sideslip
+        self.Cl_p = -0.4        # Roll damping
+        self.Cl_r = 0.1         # Roll due to yaw rate
+        self.Cn_beta = 0.1      # Directional stability
+        self.Cn_r = -0.2        # Yaw damping
+        self.Cn_p = -0.05       # Yaw due to roll rate
+        self.CY_beta = -0.2     # Side force due to sideslip
+
+        # Control derivatives (default values, user should customize)
+        self.CL_de = 0.4        # Elevator lift effectiveness
+        self.Cm_de = -1.0       # Elevator moment effectiveness
+        self.Cl_da = 0.2        # Aileron roll effectiveness
+        self.Cn_dr = -0.1       # Rudder yaw effectiveness
+        self.CY_dr = 0.1        # Rudder side force
+
+    def compute_forces_moments(
+        self,
+        state: State,
+        controls: Dict[str, float] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Compute aerodynamic forces and moments using XFOIL polars.
+
+        Process:
+        1. Calculate local Reynolds number from state
+        2. Get 2D section coefficients from XFOIL polar database
+        3. Apply 3D corrections (induced drag, lift curve slope)
+        4. Add control surface effects
+        5. Compute stability derivatives contributions
+        6. Transform to body frame
+        """
+        if controls is None:
+            controls = {}
+
+        # Extract control deflections
+        delta_e = controls.get('elevator', 0.0)
+        delta_a = controls.get('aileron', 0.0)
+        delta_r = controls.get('rudder', 0.0)
+
+        # State variables
+        V = state.airspeed
+        if V < 1.0:
+            V = 1.0  # Avoid singularity
+
+        alpha = state.alpha
+        alpha_deg = np.degrees(alpha)
+        beta = state.beta
+
+        # Angular rates (non-dimensionalized)
+        p, q, r = state.angular_rates
+        p_hat = p * self.b_ref / (2 * V)
+        q_hat = q * self.c_ref / (2 * V)
+        r_hat = r * self.b_ref / (2 * V)
+
+        # Compute Reynolds number
+        if self.rho is not None:
+            rho = self.rho
+        else:
+            rho = self._compute_density(state.altitude)
+
+        mu = self._compute_viscosity(state.altitude)
+        Re = rho * V * self.c_ref / mu
+
+        # Get 2D section coefficients from XFOIL database
+        CL_2D, CD_2D, CM_2D = self.polar_db.interpolate_coefficients(Re, alpha_deg)
+
+        # Apply 3D corrections using lifting-line theory
+        # Lift curve slope correction (finite wing)
+        CL_alpha_2D = 2 * np.pi  # Thin airfoil theory (per radian)
+        CL_alpha_3D = CL_alpha_2D / (1 + CL_alpha_2D / (np.pi * self.AR))
+
+        # 3D lift coefficient (with control effects)
+        CL_3D = CL_2D * (CL_alpha_3D / CL_alpha_2D) + self.CL_de * delta_e
+
+        # Induced drag (3D effect)
+        CD_induced = CL_3D**2 / (np.pi * self.AR * self.e)
+
+        # Total drag (profile + induced)
+        CD_3D = CD_2D + CD_induced
+
+        # Side force
+        CY = self.CY_beta * beta + self.CY_dr * delta_r
+
+        # Dynamic pressure
+        q_bar = 0.5 * rho * V**2
+
+        # Forces in wind frame
+        L_aero = q_bar * self.S_ref * CL_3D
+        D = q_bar * self.S_ref * CD_3D
+        Y = q_bar * self.S_ref * CY
+
+        # Transform to body frame
+        Fx = -D * np.cos(alpha) + L_aero * np.sin(alpha)
+        Fy = Y
+        Fz = -D * np.sin(alpha) - L_aero * np.cos(alpha)
+
+        forces = np.array([Fx, Fy, Fz])
+
+        # --- Moments ---
+
+        # Pitch moment (from XFOIL CM + pitch rate damping + elevator)
+        Cm = CM_2D + self.Cm_q * q_hat + self.Cm_de * delta_e
+        M_pitch = q_bar * self.S_ref * self.c_ref * Cm
+
+        # Roll moment (sideslip + roll rate + yaw rate + aileron)
+        Cl = (self.Cl_beta * beta +
+              self.Cl_p * p_hat +
+              self.Cl_r * r_hat +
+              self.Cl_da * delta_a)
+        L_roll = q_bar * self.S_ref * self.b_ref * Cl
+
+        # Yaw moment (sideslip + roll rate + yaw rate + rudder)
+        Cn = (self.Cn_beta * beta +
+              self.Cn_p * p_hat +
+              self.Cn_r * r_hat +
+              self.Cn_dr * delta_r)
+        N_yaw = q_bar * self.S_ref * self.b_ref * Cn
+
+        moments = np.array([L_roll, M_pitch, N_yaw])
+
+        return forces, moments
+
+    def _compute_density(self, altitude: float) -> float:
+        """Compute air density from US Standard Atmosphere."""
+        rho_sl = 0.002377  # slug/ft³ at sea level
+        h = altitude
+        if h < 36000:
+            # Troposphere
+            T = 518.67 - 0.00356616 * h  # Rankine
+            rho = rho_sl * (T / 518.67)**4.256
+        else:
+            # Stratosphere (simplified)
+            rho = 0.000706 * np.exp(-(h - 36000) / 20806)
+        return rho
+
+    def _compute_viscosity(self, altitude: float) -> float:
+        """
+        Compute dynamic viscosity using Sutherland's law.
+
+        Returns viscosity in slug/(ft·s)
+        """
+        h = altitude
+        if h < 36000:
+            T = 518.67 - 0.00356616 * h  # Rankine
+        else:
+            T = 389.97  # Isothermal stratosphere
+
+        # Sutherland's law constants (English units)
+        mu_ref = 3.62e-7  # slug/(ft·s) at T_ref
+        T_ref = 518.67    # Rankine
+        S = 198.6         # Sutherland's constant (Rankine)
+
+        mu = mu_ref * (T / T_ref)**1.5 * (T_ref + S) / (T + S)
+        return mu
+
+    def get_CLmax(self, state: State) -> float:
+        """
+        Get maximum lift coefficient at current flight conditions.
+
+        Parameters
+        ----------
+        state : State
+            Current aircraft state
+
+        Returns
+        -------
+        CLmax : float
+            Maximum lift coefficient (accounting for Reynolds effects)
+        """
+        V = state.airspeed
+        if V < 1.0:
+            V = 1.0
+
+        # Compute Reynolds number
+        if self.rho is not None:
+            rho = self.rho
+        else:
+            rho = self._compute_density(state.altitude)
+
+        mu = self._compute_viscosity(state.altitude)
+        Re = rho * V * self.c_ref / mu
+
+        return self.polar_db.get_CLmax(Re)
+
+    def get_stall_alpha(self, state: State) -> float:
+        """
+        Get stall angle of attack at current flight conditions.
+
+        Parameters
+        ----------
+        state : State
+            Current aircraft state
+
+        Returns
+        -------
+        alpha_stall : float
+            Stall angle of attack (radians)
+        """
+        CLmax = self.get_CLmax(state)
+
+        # Find alpha corresponding to CLmax
+        V = state.airspeed
+        if V < 1.0:
+            V = 1.0
+
+        if self.rho is not None:
+            rho = self.rho
+        else:
+            rho = self._compute_density(state.altitude)
+
+        mu = self._compute_viscosity(state.altitude)
+        Re = rho * V * self.c_ref / mu
+
+        # Search through polar for alpha at CLmax
+        polar = self.polar_db.polars[self.polar_db.reynolds_numbers[0]]
+        for re_val in self.polar_db.reynolds_numbers:
+            if re_val >= Re:
+                polar = self.polar_db.polars[re_val]
+                break
+
+        # Find alpha where CL is maximum
+        idx_max = np.argmax(polar['CL'])
+        alpha_stall_deg = polar['alpha'][idx_max]
+
+        return np.radians(alpha_stall_deg)
 
 
 if __name__ == "__main__":
