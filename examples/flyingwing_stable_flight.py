@@ -470,12 +470,28 @@ def main():
     plt.savefig('output/flyingwing_stable_controls.png', dpi=150, bbox_inches='tight')
     plt.close()
 
+    # Create animation
+    print("Creating trajectory animation (this may take a minute)...")
+    from src.visualization.animation import animate_trajectory
+
+    # Use fewer frames for faster generation (every 10th point)
+    frame_skip = 10
+    anim = animate_trajectory(
+        positions[::frame_skip],
+        attitudes=euler_angles[::frame_skip],
+        time=time[::frame_skip],
+        save_path='output/flyingwing_stable_animation.gif',
+        fps=30,
+        interval=50
+    )
+
     print()
     print("=" * 70)
     print("Output files:")
     print("  - output/flyingwing_stable_3d.png")
     print("  - output/flyingwing_stable_states.png")
     print("  - output/flyingwing_stable_controls.png")
+    print("  - output/flyingwing_stable_animation.gif")
     print("=" * 70)
     print()
 
