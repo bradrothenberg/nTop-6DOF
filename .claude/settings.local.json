@@ -17,7 +17,8 @@
       "Bash(git reset:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(\"C:\\Program Files\\GitHub CLI\\gh.exe\" log --oneline --grep=\"gravity\" --all -20)"
     ],
     "deny": [],
     "ask": []

@@ -33,6 +33,7 @@ def find_turbofan_trim(mass, inertia, aero, turbofan, altitude, airspeed):
     1. Calculate alpha for L = W
     2. Set theta = alpha (level flight)
     3. Calculate throttle for T = D
+    4. Calculate elevon to balance pitch moment (M = 0)
     """
 
     print("=" * 70)
@@ -70,11 +71,12 @@ def find_turbofan_trim(mass, inertia, aero, turbofan, altitude, airspeed):
     print(f"  theta_trim = {np.degrees(theta_trim):.4f} deg")
     print()
 
-    # Step 3: Calculate drag and required throttle
+    # Step 3: Estimate throttle for T ≈ D (simple approximation)
     CD_trim = aero.CD_0 + aero.CD_alpha * alpha_trim + aero.CD_alpha2 * alpha_trim**2
     D_trim = q_bar * aero.S_ref * CD_trim
 
     # Create trim state for thrust calculation
+    # Velocity in body frame at angle of attack alpha
     state_trim = State()
     state_trim.position = np.array([0, 0, altitude])
     state_trim.velocity_body = np.array([
@@ -85,15 +87,11 @@ def find_turbofan_trim(mass, inertia, aero, turbofan, altitude, airspeed):
     state_trim.set_euler_angles(0, theta_trim, 0)
     state_trim.angular_rates = np.array([0, 0, 0])
 
-    # Calculate throttle for T = D
-    # For turbofan, thrust is relatively constant with speed
-    # T = thrust_max * throttle * altitude_factor * velocity_factor
-
     # Get max thrust available at this condition
     thrust_max_available, _ = turbofan.compute_thrust(state_trim, throttle=1.0)
     T_max = thrust_max_available[0]
 
-    # Required throttle
+    # Required throttle for T ≈ D
     throttle_trim = D_trim / T_max
     throttle_trim = np.clip(throttle_trim, 0.01, 1.0)
 
@@ -110,59 +108,89 @@ def find_turbofan_trim(mass, inertia, aero, turbofan, altitude, airspeed):
     print(f"  T/D: {T_actual/D_trim:.4f}")
     print()
 
+    # Step 4: Calculate elevon to balance pitch moment
+    Cm_at_trim = aero.Cm_0 + aero.Cm_alpha * alpha_trim
+
+    # Required elevon deflection for Cm = 0
+    # Cm_total = Cm_at_trim + Cm_de * elevon = 0
+    # elevon = -Cm_at_trim / Cm_de
+    if abs(aero.Cm_de) > 1e-6:
+        elevon_trim = -Cm_at_trim / aero.Cm_de
+        elevon_trim = np.clip(elevon_trim, np.radians(-25), np.radians(25))  # Limit to ±25°
+    else:
+        elevon_trim = 0.0  # No control authority
+
+    print(f"Step 4: Find elevon for M = 0")
+    print(f"  Cm without elevon: {Cm_at_trim:.6f}")
+    print(f"  Cm_de: {aero.Cm_de:.6f} per radian")
+    print(f"  Elevon required: {np.degrees(elevon_trim):.2f} deg = {elevon_trim:.4f} rad")
+
+    # Resulting pitch moment
+    Cm_with_elevon = Cm_at_trim + aero.Cm_de * elevon_trim
+    M_pitch_with_elevon = q_bar * aero.S_ref * aero.c_ref * Cm_with_elevon
+
+    print(f"  Resulting Cm: {Cm_with_elevon:.6f}")
+    print(f"  Resulting pitch moment: {M_pitch_with_elevon:.1f} ft-lbf")
+    print()
+
     # Verify trim with full dynamics
     combined = CombinedForceModel(aero, turbofan)
     dynamics = AircraftDynamics(mass, inertia)
 
+    controls_trim = {'throttle': throttle_trim, 'elevator': elevon_trim}
+
     def force_func(s):
-        return combined(s, throttle_trim, {})
+        return combined(s, throttle_trim, controls_trim)
 
     state_dot = dynamics.state_derivative(state_trim, force_func)
     vel_dot = state_dot[3:6]
     omega_dot = state_dot[10:13]
 
-    forces, moments = combined(state_trim, throttle_trim, {})
-    Cm_trim = aero.Cm_0 + aero.Cm_alpha * alpha_trim
+    forces, moments = combined(state_trim, throttle_trim, controls_trim)
 
-    print("Step 4: Verify trim")
+    print("Step 5: Verify trim")
     print(f"  Accelerations:")
     print(f"    ax: {vel_dot[0]:.4f} ft/s^2")
     print(f"    az: {vel_dot[2]:.4f} ft/s^2")
     print(f"    q_dot: {np.degrees(omega_dot[1]):.4f} deg/s^2")
     print()
     print(f"  Pitch moment: {moments[1]:.1f} ft-lbf")
-    print(f"  Cm at trim: {Cm_trim:.6f}")
     print()
 
     is_acceptable = (
         abs(vel_dot[2]) < 1.0 and
         abs(vel_dot[0]) < 5.0 and
+        abs(np.degrees(omega_dot[1])) < 10.0 and  # Pitch accel < 10 deg/s²
         T_actual / D_trim > 0.95  # At least 95% of required thrust
     )
 
     if is_acceptable:
         print("STATUS: ACCEPTABLE TRIM")
-        print("  Vertical and forward accelerations near zero")
+        print("  All accelerations near zero")
         print("  Thrust sufficient for cruise")
+        print("  Pitch moment balanced by elevons")
     else:
         print("STATUS: POOR TRIM")
         if abs(vel_dot[2]) >= 1.0:
             print(f"  - Large vertical accel: {vel_dot[2]:.2f} ft/s^2")
         if abs(vel_dot[0]) >= 5.0:
             print(f"  - Large forward accel: {vel_dot[0]:.2f} ft/s^2")
+        if abs(np.degrees(omega_dot[1])) >= 10.0:
+            print(f"  - Large pitch accel: {np.degrees(omega_dot[1]):.2f} deg/s^2")
         if T_actual / D_trim < 0.95:
             print(f"  - Insufficient thrust: T/D = {T_actual/D_trim:.2f}")
     print()
-
-    controls_trim = {'throttle': throttle_trim}
 
     info = {
         'alpha_deg': np.degrees(alpha_trim),
         'theta_deg': np.degrees(theta_trim),
         'throttle': throttle_trim,
+        'elevon_deg': np.degrees(elevon_trim),
+        'elevon_rad': elevon_trim,
         'CL_trim': CL_trim,
         'CD_trim': CD_trim,
-        'Cm_trim': Cm_trim,
+        'Cm_no_elevon': Cm_at_trim,
+        'Cm_with_elevon': Cm_with_elevon,
         'lift': q_bar * aero.S_ref * CL_trim,
         'drag': D_trim,
         'thrust': T_actual,
@@ -204,6 +232,7 @@ def main():
     aero.CL_0 = 0.000023
     aero.CL_alpha = 1.412241
     aero.CL_q = 1.282202
+    aero.CL_de = 0.0  # Antisymmetric elevon: lift effects cancel left/right
 
     aero.CD_0 = -0.000619
     aero.CD_alpha = 0.035509
@@ -218,6 +247,9 @@ def main():
     aero.Cm_0 = 0.000061
     aero.Cm_alpha = -0.079668
     aero.Cm_q = -0.347072
+    aero.Cm_de = -0.02  # Elevon effectiveness (antisymmetric deflection) - ESTIMATED
+                         # Symmetric deflection gives ~0.0005/rad (very weak)
+                         # Antisymmetric should be ~40x stronger based on flying wing theory
 
     aero.Cn_beta = -0.000119
     aero.Cn_p = -0.000752
@@ -272,7 +304,7 @@ def main():
 
         # Fixed controls (trim values)
         def force_func(s):
-            return combined(s, controls_trim['throttle'], {})
+            return combined(s, controls_trim['throttle'], controls_trim)
 
         # State derivative
         state_dot = dynamics.state_derivative(state, force_func)
@@ -384,13 +416,18 @@ def main():
     print()
     print(f"  Alpha: {trim_info['alpha_deg']:.4f} deg")
     print(f"  Theta: {trim_info['theta_deg']:.4f} deg")
+    print(f"  Elevon: {trim_info['elevon_deg']:.2f} deg (antisymmetric)")
+    print()
     print(f"  CL: {trim_info['CL_trim']:.6f}")
     print(f"  CD: {trim_info['CD_trim']:.6f}")
+    print(f"  Cm (no elevon): {trim_info['Cm_no_elevon']:.6f}")
+    print(f"  Cm (with elevon): {trim_info['Cm_with_elevon']:.6f}")
     print(f"  L/D: {trim_info['CL_trim']/trim_info['CD_trim']:.1f}")
     print()
     print(f"  Lift: {trim_info['lift']:.1f} lbf")
     print(f"  Drag: {trim_info['drag']:.1f} lbf")
     print(f"  T/D: {trim_info['thrust']/trim_info['drag']:.3f}")
+    print(f"  Pitch moment: {trim_info['pitch_moment']:.1f} ft-lbf")
     print("=" * 70)
     print()
 

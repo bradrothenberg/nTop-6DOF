@@ -40,17 +40,20 @@ aero.CD_0 = -0.000619
 aero.CD_alpha = 0.035509
 aero.CD_alpha2 = 0.5
 
+aero.CL_de = 0.0  # Antisymmetric elevon: lift effects cancel
 aero.Cm_0 = 0.000061
 aero.Cm_alpha = -0.079668
 aero.Cm_q = -0.347072
+aero.Cm_de = -0.02  # Antisymmetric elevon effectiveness
 
-prop = PropellerModel(power_max=50.0, prop_diameter=6.0, prop_efficiency=0.75)
-combined_model = CombinedForceModel(aero, prop)
+from src.core.propulsion import TurbofanModel
+turbofan = TurbofanModel(thrust_max=1900.0, altitude_lapse_rate=0.7)
+combined_model = CombinedForceModel(aero, turbofan)
 
-# Initial state at supposed trim
+# Initial state at supposed trim (from FJ-44 test)
 altitude = -5000.0
 airspeed = 548.5
-alpha_trim = np.radians(1.75)
+alpha_trim = np.radians(1.7531)
 
 atm = StandardAtmosphere(altitude)
 aero.rho = atm.density
@@ -75,9 +78,10 @@ print(f"  Pitch: {np.degrees(state.euler_angles[1]):.4f} deg")
 print(f"  Angular rates: {state.angular_rates}")
 print()
 
-# Control inputs
-throttle = 0.318
-controls = {'throttle': throttle, 'elevator': 0.0}
+# Control inputs (from FJ-44 trim solution)
+throttle = 0.0931
+elevon = np.radians(-6.81)
+controls = {'throttle': throttle, 'elevator': elevon}
 
 # Compute forces and moments
 forces, moments = combined_model(state, throttle, controls)
