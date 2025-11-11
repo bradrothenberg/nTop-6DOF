@@ -148,7 +148,7 @@ def main():
     os.makedirs('output', exist_ok=True)
 
     print("=" * 70)
-    print("Flying Wing - Stable Flight Test (Enhanced Autopilot)")
+    print("Flying Wing - Stable Flight Test (Hybrid XFOIL+AVL)")
     print("=" * 70)
     print()
 
@@ -204,9 +204,9 @@ def main():
         airspeed=trim_airspeed
     )
 
-    # === Initialize Enhanced Autopilot ===
+    # === Initialize Hybrid XFOIL+AVL ===
     print("=" * 70)
-    print("Initializing Enhanced Autopilot")
+    print("Initializing Hybrid XFOIL+AVL")
     print("=" * 70)
     print()
 
@@ -407,10 +407,10 @@ def main():
 
     fig1 = plot_trajectory_3d(
         positions,
-        title="Flying Wing - Enhanced Autopilot (Stable Flight)",
+        title="Flying Wing - Hybrid XFOIL+AVL (Stable Flight)",
         show_markers=True,
         marker_interval=500,
-        save_path='output/flyingwing_stable_3d.png'
+        save_path='output/flyingwing_hybrid_3d.png'
     )
     plt.close(fig1)
 
@@ -423,8 +423,8 @@ def main():
     fig2 = plot_states_vs_time(
         time,
         states,
-        title="Flying Wing - Enhanced Autopilot State Variables",
-        save_path='output/flyingwing_stable_states.png'
+        title="Flying Wing - Hybrid XFOIL+AVL State Variables",
+        save_path='output/flyingwing_hybrid_states.png'
     )
     plt.close(fig2)
 
@@ -466,7 +466,7 @@ def main():
     axes[2].grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig('output/flyingwing_stable_controls.png', dpi=150, bbox_inches='tight')
+    plt.savefig('output/flyingwing_hybrid_controls.png', dpi=150, bbox_inches='tight')
     plt.close()
 
     # Create animation
@@ -479,7 +479,7 @@ def main():
         positions[::frame_skip],
         attitudes=euler_angles[::frame_skip],
         time=time[::frame_skip],
-        save_path='output/flyingwing_stable_animation.gif',
+        save_path='output/flyingwing_hybrid_animation.gif',
         fps=30,
         interval=50
     )
@@ -487,10 +487,10 @@ def main():
     print()
     print("=" * 70)
     print("Output files:")
-    print("  - output/flyingwing_stable_3d.png")
-    print("  - output/flyingwing_stable_states.png")
-    print("  - output/flyingwing_stable_controls.png")
-    print("  - output/flyingwing_stable_animation.gif")
+    print("  - output/flyingwing_hybrid_3d.png")
+    print("  - output/flyingwing_hybrid_states.png")
+    print("  - output/flyingwing_hybrid_controls.png")
+    print("  - output/flyingwing_hybrid_animation.gif")
     print("=" * 70)
     print()
 
