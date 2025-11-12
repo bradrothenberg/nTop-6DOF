@@ -50,10 +50,10 @@ def plot_trajectory_3d(
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111, projection='3d')
 
-    # Extract coordinates
+    # Extract coordinates (negate z to convert NED altitude to positive up)
     x = positions[:, 0]
     y = positions[:, 1]
-    z = positions[:, 2]
+    z = -positions[:, 2]  # Negate to convert NED (down positive) to altitude (up positive)
 
     # Plot trajectory line
     ax.plot(x, y, z, 'b-', linewidth=2, label='Trajectory')

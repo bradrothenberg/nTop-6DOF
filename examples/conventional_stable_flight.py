@@ -84,8 +84,16 @@ def find_turbofan_trim(mass, inertia, aero, turbofan, altitude, airspeed):
     print(f"  theta_trim = {np.degrees(theta_trim):.4f} deg")
     print()
 
-    # Step 3: Estimate throttle for T ≈ D
-    CD_trim = aero.CD_0 + aero.CD_alpha * alpha_trim + aero.CD_alpha2 * alpha_trim**2
+    # Step 3: Iterate to find elevator, drag, and throttle together
+    # Initial guess without elevator drag
+    CD_trim_initial = aero.CD_0 + aero.CD_alpha * alpha_trim + aero.CD_alpha2 * alpha_trim**2
+
+    # Step 4: Calculate elevator for M = 0 (do this before drag iteration)
+    Cm_trim = aero.Cm_0 + aero.Cm_alpha * alpha_trim
+    elevator_trim = -Cm_trim / aero.Cm_de
+
+    # Now add elevator drag to CD
+    CD_trim = CD_trim_initial + aero.CD_de * abs(elevator_trim)
     D_trim = q_bar * aero.S_ref * CD_trim
 
     # Create trim state for thrust calculation
@@ -107,25 +115,14 @@ def find_turbofan_trim(mass, inertia, aero, turbofan, altitude, airspeed):
     throttle_trim = D_trim / T_max
     throttle_trim = np.clip(throttle_trim, 0.01, 1.0)
 
-    print(f"Step 3: Throttle for T = D")
-    print(f"  CD_trim = {CD_trim:.6f}")
+    print(f"Step 3: Throttle for T = D (with elevator drag)")
+    print(f"  CD_trim (no elevator) = {CD_trim_initial:.6f}")
+    print(f"  elevator_trim = {np.degrees(elevator_trim):.4f} deg")
+    print(f"  CD_de * |elevator| = {aero.CD_de * abs(elevator_trim):.6f}")
+    print(f"  CD_trim (with elevator) = {CD_trim:.6f}")
     print(f"  D_trim = {D_trim:.1f} lbf")
     print(f"  T_max_available = {T_max:.1f} lbf")
     print(f"  throttle_trim = {throttle_trim:.4f} ({100*throttle_trim:.1f}%)")
-    print()
-
-    # Step 4: Calculate elevator for M = 0
-    # Pitching moment: Cm = Cm_0 + Cm_alpha * alpha + Cm_de * elevator
-    # For trim: Cm = 0, so elevator = -(Cm_0 + Cm_alpha * alpha) / Cm_de
-    Cm_trim = aero.Cm_0 + aero.Cm_alpha * alpha_trim
-    elevator_trim = -Cm_trim / aero.Cm_de
-
-    print(f"Step 4: Elevator for M = 0")
-    print(f"  Cm_0 = {aero.Cm_0:.6f}")
-    print(f"  Cm_alpha * alpha = {aero.Cm_alpha * alpha_trim:.6f}")
-    print(f"  Cm_trim = {Cm_trim:.6f}")
-    print(f"  Cm_de = {aero.Cm_de:.6f}")
-    print(f"  elevator_trim = {np.degrees(elevator_trim):.4f} deg")
     print()
 
     print("=" * 70)
@@ -180,10 +177,11 @@ def main():
     aero.CL_q = aero_data.CL_Q
     aero.CL_de = aero_data.CL_DE_RAD  # Elevator control (converted to per radian)
 
-    aero.CD_0 = 0.006  # Use XFOIL drag estimate (more realistic than AVL CD_trim)
+    aero.CD_0 = 0.012  # Empirically tuned for stable flight (2x XFOIL estimate)
     aero.CD_alpha = aero_data.CD_ALPHA
     aero.CD_alpha2 = 0.05  # Generic induced drag term
     aero.CD_q = aero_data.CD_Q
+    aero.CD_de = abs(aero_data.CD_DE_RAD)  # Elevator drag (always positive)
 
     aero.Cm_0 = aero_data.TRIM_CM - aero_data.CM_ALPHA * np.radians(aero_data.TRIM_ALPHA)
     aero.Cm_alpha = aero_data.CM_ALPHA  # EXCELLENT: -1.643
@@ -217,7 +215,7 @@ def main():
     print(f"  Cn_r = {aero.Cn_r:.4f} /rad (EXCELLENT!)")
     print()
 
-    # Create turbofan engine
+    # Create turbofan engine (same as flying wing for comparison)
     turbofan = TurbofanModel(thrust_max=1900.0, altitude_lapse_rate=0.7)
 
     # Create dynamics
@@ -225,7 +223,7 @@ def main():
 
     # Flight condition
     altitude = -5000.0  # ft (negative in NED frame)
-    airspeed = 600.0  # ft/s (Mach 0.54 at 5000 ft)
+    airspeed = 450.0  # ft/s (reduced to match available thrust)
 
     # Find trim
     trim = find_turbofan_trim(mass, inertia, aero, turbofan, altitude, airspeed)
@@ -242,28 +240,34 @@ def main():
     state.angular_rates = np.array([0.0, 0.0, 0.0])
 
     # Create autopilot (can reuse FlyingWingAutopilot - it just controls pitch)
-    # Tuned gains for conventional configuration
+    # Gains reduced 10-20x from flying wing due to 20x stronger pitch authority
     autopilot = FlyingWingAutopilot(
-        target_altitude=-altitude,
-        trim_throttle=trim['throttle'],
-        trim_elevon=trim['elevator'],  # Use as elevator trim
-        Kp_alt=0.005,  # Altitude control
-        Ki_alt=0.0005,
-        Kd_alt=0.012,
-        Kp_pitch=0.8,  # Pitch attitude control
-        Ki_pitch=0.05,
-        Kd_pitch=0.15,
-        Kp_pitch_rate=0.15,  # Pitch rate damping
-        Ki_pitch_rate=0.01,
-        target_airspeed=airspeed,
-        stall_airspeed=150.0
+        # Altitude control gains - reduced 20x for much stronger Cm_alpha (-1.643 vs -0.08)
+        Kp_alt=0.00025,     # Was 0.005, now 0.00025 (20x reduction)
+        Ki_alt=0.00001,     # Was 0.0005, now 0.00001 (50x reduction)
+        Kd_alt=0.0006,      # Was 0.012, now 0.0006 (20x reduction)
+
+        # Pitch attitude gains - reduced 15x for stronger Cm_q (-6.197 vs -0.347)
+        Kp_pitch=0.05,      # Was 0.8, now 0.05 (16x reduction)
+        Ki_pitch=0.003,     # Was 0.05, now 0.003 (17x reduction)
+        Kd_pitch=0.01,      # Was 0.15, now 0.01 (15x reduction)
+
+        # Pitch rate gains - reduced 10x for stronger pitch damping
+        Kp_pitch_rate=0.015,   # Was 0.15, now 0.015 (10x reduction)
+        Ki_pitch_rate=0.001,   # Was 0.01, now 0.001 (10x reduction)
+
+        max_pitch_cmd=12.0,
+        min_pitch_cmd=-8.0,
+        max_alpha=12.0,
+        stall_speed=150.0,
+        min_airspeed_margin=1.3
     )
 
-    airspeed_controller = AirspeedHoldController(
-        target_airspeed=airspeed,
-        trim_throttle=trim['throttle'],
-        Kp=0.015  # Increased for higher drag
-    )
+    # Set trim and target
+    autopilot.set_trim(elevon_trim=trim['elevator'])
+    autopilot.set_target_altitude(-altitude)
+
+    # No separate airspeed controller - implement directly in loop like hybrid example
 
     # Simulation parameters
     dt = 0.01  # 10ms time step
@@ -275,6 +279,9 @@ def main():
     states_history = []
     controls_history = []
 
+    # Create combined force model
+    combined = CombinedForceModel(aero, turbofan)
+
     # Simulation loop
     print("Running simulation...")
     print(f"  Duration: {duration} seconds")
@@ -285,49 +292,52 @@ def main():
     for step in range(num_steps):
         t = step * dt
 
-        # Compute autopilot commands
-        elevon_cmd = autopilot.update(state, dt)  # Use as elevator command
-        throttle_cmd = airspeed_controller.update(state, dt)
+        # Compute autopilot commands (using FlyingWingAutopilot for pitch control)
+        elevator = autopilot.update(
+            current_altitude=state.altitude,
+            current_pitch=state.euler_angles[1],
+            current_pitch_rate=state.angular_rates[1],
+            current_airspeed=state.airspeed,
+            current_alpha=state.alpha,
+            dt=dt
+        )
+
+        # Throttle control (proportional airspeed hold)
+        if autopilot.stall_protection_active or autopilot.alpha_protection_active:
+            throttle = 1.0  # Max throttle for stall recovery
+        else:
+            airspeed_error = airspeed - state.airspeed
+            throttle = trim['throttle'] + 0.015 * airspeed_error
+            throttle = np.clip(throttle, 0.05, 1.0)
 
         # Control inputs for conventional configuration
-        # elevon_cmd becomes elevator, set aileron=0, rudder=0
         controls = {
-            'throttle': throttle_cmd,
-            'elevator': elevon_cmd,  # Elevator control
+            'throttle': throttle,
+            'elevator': elevator,
             'aileron': 0.0,  # No lateral control for now
             'rudder': 0.0   # No yaw control for now
         }
-
-        # Compute derivatives
-        state_dot = dynamics.compute_derivatives(state, controls)
-
-        # Integrate (Euler method)
-        state.position += state_dot.velocity_ned * dt
-        state.velocity_body += state_dot.acceleration_body * dt
-        state.angular_rates += state_dot.angular_acceleration * dt
-
-        # Update quaternion
-        q = state.quaternion
-        q_dot = 0.5 * np.array([
-            -q[1]*state.angular_rates[0] - q[2]*state.angular_rates[1] - q[3]*state.angular_rates[2],
-            q[0]*state.angular_rates[0] + q[2]*state.angular_rates[2] - q[3]*state.angular_rates[1],
-            q[0]*state.angular_rates[1] - q[1]*state.angular_rates[2] + q[3]*state.angular_rates[0],
-            q[0]*state.angular_rates[2] + q[1]*state.angular_rates[1] - q[2]*state.angular_rates[0]
-        ])
-        state.quaternion += q_dot * dt
-        state.quaternion /= np.linalg.norm(state.quaternion)  # Normalize
 
         # Store data
         time_history.append(t)
         states_history.append(state.copy())
         controls_history.append(controls.copy())
 
+        # Force function with atmosphere update
+        def force_func(s):
+            atm = StandardAtmosphere(s.altitude)
+            aero.rho = atm.density
+            return combined(s, controls['throttle'], controls)
+
+        # RK4 integration
+        state = dynamics.propagate_rk4(state, dt, force_func)
+
         # Progress indicator
         if step % 1000 == 0:
             alt_ft = -state.position[2]
             V_body = np.linalg.norm(state.velocity_body)
             print(f"  t = {t:.1f}s: alt = {alt_ft:.0f} ft, V = {V_body:.1f} ft/s, "
-                  f"elev = {np.degrees(elevon_cmd):.2f}°, throttle = {throttle_cmd:.3f}")
+                  f"elev = {np.degrees(elevator):.2f}°, throttle = {throttle:.3f}")
 
     print("\nSimulation complete!")
     print()
@@ -339,7 +349,7 @@ def main():
 
     altitudes = np.array([-s.position[2] for s in states_history])
     airspeeds = np.array([np.linalg.norm(s.velocity_body) for s in states_history])
-    euler = np.array([s.euler_angles() for s in states_history])
+    euler = np.array([s.euler_angles for s in states_history])
     rolls = np.degrees(euler[:, 0])
     pitches = np.degrees(euler[:, 1])
 
@@ -370,15 +380,34 @@ def main():
     # Visualization
     setup_plotting_style()
 
+    # Extract position array for 3D trajectory plot
+    positions = np.array([s.position for s in states_history])
+
     # 3D trajectory
-    fig = plot_trajectory_3d(states_history, title="Conventional Tail - Stable Flight (AVL Aerodynamics)")
-    fig.savefig("output/conventional_stable_3d.png", dpi=150, bbox_inches='tight')
+    fig = plot_trajectory_3d(
+        positions,
+        title="Conventional Tail - Stable Flight (AVL Aerodynamics)",
+        save_path="output/conventional_stable_3d.png"
+    )
     plt.close(fig)
 
-    # State history
-    fig = plot_states_vs_time(time_history, states_history,
-                              title="Conventional Tail - State Variables (AVL Aerodynamics)")
-    fig.savefig("output/conventional_stable_states.png", dpi=150, bbox_inches='tight')
+    # State history - create states dict for plot_states_vs_time
+    velocities = np.array([s.velocity_body for s in states_history])
+    angular_rates = np.array([s.angular_rates for s in states_history])
+
+    states_dict = {
+        'position': positions,
+        'velocity': velocities,
+        'euler_angles': euler,
+        'angular_rates': angular_rates
+    }
+
+    fig = plot_states_vs_time(
+        np.array(time_history),
+        states_dict,
+        title="Conventional Tail - State Variables (AVL Aerodynamics)",
+        save_path="output/conventional_stable_states.png"
+    )
     plt.close(fig)
 
     # Control history

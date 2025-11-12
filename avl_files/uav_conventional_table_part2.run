@@ -1,0 +1,165 @@
+-----------------------------------------------------------------------------
+Run case  1:  Alpha=8.0, Elevator=-15.0
+
+alpha        ->  alpha       =   8.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    = -15.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  2:  Alpha=8.0, Elevator=-10.0
+
+alpha        ->  alpha       =   8.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    = -10.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  3:  Alpha=8.0, Elevator=-5.0
+
+alpha        ->  alpha       =   8.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =  -5.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  4:  Alpha=8.0, Elevator=0.0
+
+alpha        ->  alpha       =   8.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =   0.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  5:  Alpha=8.0, Elevator=5.0
+
+alpha        ->  alpha       =   8.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =   5.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  6:  Alpha=10.0, Elevator=-15.0
+
+alpha        ->  alpha       =  10.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    = -15.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  7:  Alpha=10.0, Elevator=-10.0
+
+alpha        ->  alpha       =  10.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    = -10.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  8:  Alpha=10.0, Elevator=-5.0
+
+alpha        ->  alpha       =  10.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =  -5.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  9:  Alpha=10.0, Elevator=0.0
+
+alpha        ->  alpha       =  10.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =   0.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  10:  Alpha=10.0, Elevator=5.0
+
+alpha        ->  alpha       =  10.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =   5.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  11:  Alpha=12.0, Elevator=-15.0
+
+alpha        ->  alpha       =  12.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    = -15.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  12:  Alpha=12.0, Elevator=-10.0
+
+alpha        ->  alpha       =  12.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    = -10.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  13:  Alpha=12.0, Elevator=-5.0
+
+alpha        ->  alpha       =  12.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =  -5.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  14:  Alpha=12.0, Elevator=0.0
+
+alpha        ->  alpha       =  12.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =   0.00000
+rudder       ->  rudder      =   0.00000
+-----------------------------------------------------------------------------
+Run case  15:  Alpha=12.0, Elevator=5.0
+
+alpha        ->  alpha       =  12.00000
+beta         ->  beta        =   0.00000
+pb/2V        ->  pb/2V       =   0.00000
+qc/2V        ->  qc/2V       =   0.00000
+rb/2V        ->  rb/2V       =   0.00000
+aileron      ->  aileron     =   0.00000
+elevator     ->  elevator    =   5.00000
+rudder       ->  rudder      =   0.00000

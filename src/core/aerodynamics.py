@@ -167,6 +167,8 @@ class LinearAeroModel(AeroModel):
         self.CD_0 = 0.02
         self.CD_alpha = 0.1
         self.CD_alpha2 = 0.5  # Induced drag
+        self.CD_q = 0.0  # Drag due to pitch rate
+        self.CD_de = 0.0  # Drag due to elevator (should be positive)
 
         self.CY_beta = -0.2
         self.CY_dr = 0.1  # rudder
@@ -217,7 +219,8 @@ class LinearAeroModel(AeroModel):
 
         # Force coefficients
         CL = self.CL_0 + self.CL_alpha * alpha + self.CL_q * q_hat + self.CL_de * delta_e
-        CD = self.CD_0 + self.CD_alpha * alpha + self.CD_alpha2 * alpha**2
+        CD = self.CD_0 + self.CD_alpha * alpha + self.CD_alpha2 * alpha**2 + \
+             self.CD_q * q_hat + self.CD_de * abs(delta_e)  # Elevator drag is always positive
         CY = self.CY_beta * beta + self.CY_dr * delta_r
 
         # Moment coefficients
