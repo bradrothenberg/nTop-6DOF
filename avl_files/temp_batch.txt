@@ -1,0 +1,7 @@
+OPER
+X
+FT
+temp_sweep.ft
+
+QUIT
+

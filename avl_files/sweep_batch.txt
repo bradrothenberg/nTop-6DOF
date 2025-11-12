@@ -1,0 +1,59 @@
+OPER
+
+D1 D1 -15.0 -15.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_-15.0.txt
+
+D1 D1 -13.0 -13.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_-13.0.txt
+
+D1 D1 -11.0 -11.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_-11.0.txt
+
+D1 D1 -9.0 -9.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_-9.0.txt
+
+D1 D1 -7.0 -7.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_-7.0.txt
+
+D1 D1 -5.0 -5.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_-5.0.txt
+
+D1 D1 -3.0 -3.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_-3.0.txt
+
+D1 D1 -1.0 -1.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_-1.0.txt
+
+D1 D1 1.0 1.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_1.0.txt
+
+D1 D1 3.0 3.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_3.0.txt
+
+D1 D1 5.0 5.0 1
+A A -2.0 12.0 1.0
+W
+polar_elev_5.0.txt
+
+QUIT
+
