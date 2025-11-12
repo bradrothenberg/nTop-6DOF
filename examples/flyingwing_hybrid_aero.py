@@ -11,6 +11,7 @@ Combines XFOIL drag data with AVL stability derivatives using LinearAeroModel:
 import numpy as np
 import sys
 import os
+from pathlib import Path
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -469,6 +470,21 @@ def main():
     plt.savefig('output/flyingwing_hybrid_controls.png', dpi=150, bbox_inches='tight')
     plt.close()
 
+    # Save flight history for animation
+    print("Saving flight history...")
+    import pickle
+    history = {
+        'time': time,
+        'position': positions,
+        'attitude': euler_angles,
+        'velocity': velocities
+    }
+    history_file = Path("output/flyingwing_hybrid_history.pkl")
+    with open(history_file, 'wb') as f:
+        pickle.dump(history, f)
+    print(f"Flight history saved: {history_file}")
+    print()
+
     # Create animation
     print("Creating trajectory animation (this may take a minute)...")
     from src.visualization.animation import animate_trajectory
@@ -491,6 +507,7 @@ def main():
     print("  - output/flyingwing_hybrid_states.png")
     print("  - output/flyingwing_hybrid_controls.png")
     print("  - output/flyingwing_hybrid_animation.gif")
+    print("  - output/flyingwing_hybrid_history.pkl")
     print("=" * 70)
     print()
 
