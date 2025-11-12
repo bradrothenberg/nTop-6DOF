@@ -1,0 +1,15 @@
+LOAD
+uav_conventional.avl
+MASS
+uav_conventional.mass
+CASE
+conventional_trim.run
+OPER
+
+X
+FT
+conventional_trim.ft
+ST
+conventional_trim.st
+
+QUIT
