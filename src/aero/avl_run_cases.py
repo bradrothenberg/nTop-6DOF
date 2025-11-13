@@ -242,12 +242,19 @@ def generate_run_cases(output_file: str, mass_slugs: float, inertia_slug_ft2: np
     )
     cases.append(case_landing)
 
-    # Write run file
+    # Write run file (AVL format requires blank line, separator, then cases numbered)
     with open(output_file, 'w') as f:
-        for case in cases:
-            f.write(case)
+        f.write("\n")  # Start with blank line
+        for i, case in enumerate(cases, 1):
+            f.write(" " + "-" * 70 + "\n")
+            # Replace "Run case  Name:" with "Run case  #:  Name"
+            case_lines = case.split('\n')
+            if case_lines[0].startswith(' Run case  '):
+                # Extract name from " Run case  Name:"
+                name_part = case_lines[0].replace(' Run case  ', '').rstrip(':')
+                case_lines[0] = f" Run case  {i}:  {name_part}"
+            f.write('\n'.join(case_lines))
             f.write("\n\n")
-            f.write(" " + "-" * 70 + "\n\n")
 
     # Print summary
     print(f"Generated {len(cases)} run cases:")
