@@ -296,6 +296,80 @@ class AVLGeometryWriter:
 
         self.surfaces.append(surface)
 
+    def add_winglet_from_geometry(self, winglet: 'WingletGeometry', airfoil: str = "NACA 0012",
+                                  elevon_hinge: float = 0.75, has_elevon: bool = True,
+                                  side: str = "right", name: str = "Winglet"):
+        """
+        Add winglet surface from WingletGeometry object.
+
+        Parameters:
+        -----------
+        winglet : WingletGeometry
+            Winglet geometric properties
+        airfoil : str
+            Airfoil designation
+        elevon_hinge : float
+            Elevon hinge line as fraction of chord
+        has_elevon : bool
+            Whether this winglet section has elevon control
+        side : str
+            "right" or "left" winglet
+        name : str
+            Surface name
+        """
+        # Winglets are vertical surfaces extending in Z
+        # Need to create sections at different Z stations
+
+        # Create 3 sections: root, mid, tip
+        n_sections = 3
+        z_stations = np.linspace(winglet.root_le[2], winglet.tip_le[2], n_sections)
+
+        sections = []
+
+        for z in z_stations:
+            # Interpolate X, Y, chord at this Z station
+            t = (z - winglet.root_le[2]) / (winglet.tip_le[2] - winglet.root_le[2]) if winglet.height > 0.01 else 0
+
+            # Linear interpolation between root and tip
+            x_le = winglet.root_le[0] + t * (winglet.tip_le[0] - winglet.root_le[0])
+            y_le = winglet.root_le[1] + t * (winglet.tip_le[1] - winglet.root_le[1])
+            chord = winglet.root_chord + t * (winglet.tip_chord - winglet.root_chord)
+
+            section = {
+                'x_le': x_le,
+                'y_le': y_le if side == "right" else -y_le,  # Mirror for left winglet
+                'z_le': z,
+                'chord': chord,
+                'ainc': 0.0,
+                'airfoil': airfoil,
+                'controls': []
+            }
+
+            # Add elevon control to outer sections
+            if has_elevon and t > 0.3:  # Elevon on outer 70% of winglet
+                section['controls'].append({
+                    'name': 'elevon',
+                    'gain': 1.0,
+                    'xhinge': elevon_hinge,
+                    'hinge_vec': [0, 0, 0],
+                    'sign_dup': -1.0  # Antisymmetric for roll control
+                })
+
+            sections.append(section)
+
+        surface = {
+            'name': name,
+            'n_chord': 8,
+            'c_space': 1.0,
+            'n_span': 8,  # Spanwise panels along winglet height
+            's_space': 1.0,
+            'component': 4 if side == "right" else 5,  # Separate components
+            'y_duplicate': None,  # No duplication - explicit left/right
+            'sections': sections
+        }
+
+        self.surfaces.append(surface)
+
     def write_avl_file(self, filepath: str):
         """
         Write AVL geometry file.
