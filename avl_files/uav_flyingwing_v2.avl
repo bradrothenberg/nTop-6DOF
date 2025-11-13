@@ -4,9 +4,9 @@ nTop_FlyingWing_V2
 #IYsym   IZsym   Zsym
  0      0       0.0
 #Sref    Cref    Bref
-   206.3185     26.0616     24.8630
+    52.0702     11.5395     11.9836
 #Xref    Yref    Zref
-    12.8461     -0.0006      0.0437
+     3.6635      0.0020      0.2476
 #CDp (optional)
     0.00000
 #
@@ -25,7 +25,7 @@ YDUPLICATE
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   0.0219   0.0000   0.0000  22.4008   0.00
+  -0.3864   0.0000   0.0000   8.2197   0.00
 #
 AFIL
  NACA 2412
@@ -33,7 +33,7 @@ AFIL
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   1.5078   0.5789   0.0608  20.7604   0.00
+   0.1043   0.6658   0.0349   8.1432   0.00
 #
 AFIL
  NACA 2412
@@ -41,7 +41,7 @@ AFIL
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   3.3144   1.1579   0.1217  18.9268   0.00
+   1.1575   1.3315   0.0698   6.3374   0.00
 #
 AFIL
  NACA 2412
@@ -49,7 +49,7 @@ AFIL
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   6.4911   1.7368   0.1825  14.9830   0.00
+   2.1339   1.9973   0.1047   4.8054   0.00
 #
 AFIL
  NACA 2412
@@ -57,53 +57,29 @@ AFIL
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-  12.8889   5.9671   0.6272   6.0971   0.00
+   6.7724   5.9918   0.3140   1.2323   0.00
 #
 AFIL
  NACA 2412
 #
 CONTROL
 #name     gain    Xhinge  XYZhvec  SgnDup
- flaperon  1.000   0.750   0.0  0.0  0.0   -1.00
-#
-#-----------------
-SECTION
-#Xle     Yle      Zle      Chord    Ainc
-  17.9008  11.8672   1.2473   2.0784   0.00
-#
-AFIL
- NACA 2412
-#
-CONTROL
-#name     gain    Xhinge  XYZhvec  SgnDup
- flaperon  1.000   0.750   0.0  0.0  0.0   -1.00
-#
-#-----------------
-SECTION
-#Xle     Yle      Zle      Chord    Ainc
-  18.3743  12.4315   1.3066   0.2455   0.00
-#
-AFIL
- NACA 2412
-#
-CONTROL
-#name     gain    Xhinge  XYZhvec  SgnDup
- flaperon  1.000   0.750   0.0  0.0  0.0   -1.00
+ flaperon  1.000   0.678   0.0  0.0  0.0   -1.00
 #
 
 #============================================================
 SURFACE
-Winglet_Right
+Winglet_Lower_Right
 #Nchordwise  Cspace  [Nspanwise  Sspace]
-   8         1.00       8        1.00
+   8         1.00       6        1.00
 #
 COMPONENT
- 4
+ 6
 #
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   6.7817   5.9643   0.3365   1.5786   0.00
+   6.7817   5.9753   0.3777   1.2157   0.00
 #
 AFIL
  NACA 0012
@@ -111,7 +87,7 @@ AFIL
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   7.3651   6.1180   0.9103   1.1506   0.00
+   7.0317   5.9078   0.1259   1.1100   0.00
 #
 AFIL
  NACA 0012
@@ -123,7 +99,7 @@ CONTROL
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   7.9484   6.2717   1.4840   0.7225   0.00
+   7.2817   5.8404  -0.1258   1.0043   0.00
 #
 AFIL
  NACA 0012
@@ -135,17 +111,17 @@ CONTROL
 
 #============================================================
 SURFACE
-Winglet_Left
+Winglet_Lower_Left
 #Nchordwise  Cspace  [Nspanwise  Sspace]
-   8         1.00       8        1.00
+   8         1.00       6        1.00
 #
 COMPONENT
- 5
+ 7
 #
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   6.7817  -5.9643   0.3365   1.5786   0.00
+   6.7817  -5.9753   0.3777   1.2157   0.00
 #
 AFIL
  NACA 0012
@@ -153,7 +129,7 @@ AFIL
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   7.3651  -6.1180   0.9103   1.1506   0.00
+   7.0317  -5.9078   0.1259   1.1100   0.00
 #
 AFIL
  NACA 0012
@@ -165,7 +141,7 @@ CONTROL
 #-----------------
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
-   7.9484  -6.2717   1.4840   0.7225   0.00
+   7.2817  -5.8404  -0.1258   1.0043   0.00
 #
 AFIL
  NACA 0012

@@ -36,16 +36,26 @@ class WingGeometry:
 class WingletGeometry:
     """Container for winglet geometric properties."""
     points: np.ndarray     # All winglet points (N x 3) in feet
-    root_le: np.ndarray    # Root leading edge position (3,) in feet
-    root_te: np.ndarray    # Root trailing edge position (3,) in feet
-    tip_le: np.ndarray     # Tip leading edge position (3,) in feet
-    tip_te: np.ndarray     # Tip trailing edge position (3,) in feet
-    root_chord: float      # Root chord in feet
-    tip_chord: float       # Tip chord in feet
-    height: float          # Winglet height (span) in feet
-    cant_angle: float      # Cant angle (dihedral) in degrees
-    sweep_le: float        # Leading edge sweep in degrees
-    attach_y: float        # Attachment Y station on main wing in feet
+    upper_root_le: np.ndarray    # Upper root leading edge position (3,) in feet
+    upper_root_te: np.ndarray    # Upper root trailing edge position (3,) in feet
+    upper_tip_le: np.ndarray     # Upper tip leading edge position (3,) in feet
+    upper_tip_te: np.ndarray     # Upper tip trailing edge position (3,) in feet
+    lower_root_le: np.ndarray    # Lower root leading edge position (3,) in feet
+    lower_root_te: np.ndarray    # Lower root trailing edge position (3,) in feet
+    lower_tip_le: np.ndarray     # Lower tip leading edge position (3,) in feet
+    lower_tip_te: np.ndarray     # Lower tip trailing edge position (3,) in feet
+    upper_root_chord: float      # Upper winglet root chord in feet
+    upper_tip_chord: float       # Upper winglet tip chord in feet
+    upper_height: float          # Upper winglet height (span) in feet
+    lower_root_chord: float      # Lower winglet root chord in feet
+    lower_tip_chord: float       # Lower winglet tip chord in feet
+    lower_height: float          # Lower winglet height (span) in feet
+    upper_cant_angle: float      # Upper winglet cant angle in degrees
+    lower_cant_angle: float      # Lower winglet cant angle in degrees
+    upper_sweep_le: float        # Upper winglet LE sweep in degrees
+    lower_sweep_le: float        # Lower winglet LE sweep in degrees
+    attach_y: float              # Attachment Y station on main wing in feet
+    attach_z: float              # Attachment Z position on main wing in feet
 
 
 @dataclass
@@ -323,10 +333,10 @@ def print_geometry_summary(wing: WingGeometry, h_tail: Dict = None, v_tail: Dict
 
 def compute_winglet_geometry(winglet_points: np.ndarray, wing: WingGeometry) -> WingletGeometry:
     """
-    Compute winglet geometric properties from point cloud.
+    Compute split winglet geometric properties from point cloud.
 
-    The winglet points form a closed contour defining the winglet surface.
-    Winglets extend vertically (in Z) from the wing tip.
+    The winglet points define upper and lower winglet surfaces that extend
+    vertically (in Z) both above and below the wing tip attachment point.
 
     Parameters:
     -----------
@@ -338,72 +348,131 @@ def compute_winglet_geometry(winglet_points: np.ndarray, wing: WingGeometry) -> 
     Returns:
     --------
     geom : WingletGeometry
-        Container with winglet properties
+        Container with upper and lower winglet properties
     """
 
-    # Winglet extends in Z direction (vertically)
+    # Winglet extends in Z direction (vertically above and below wing)
     z_vals = winglet_points[:, 2]
     y_vals = winglet_points[:, 1]
 
-    # Root is at minimum Z (attached to wing tip)
+    # Find attachment point (middle Z values)
     z_min = np.min(z_vals)
     z_max = np.max(z_vals)
+    z_mid = (z_min + z_max) / 2.0
 
-    # Find attachment Y location (average Y coordinate)
+    # Attachment Y location (average Y coordinate)
     attach_y = np.mean(y_vals)
 
-    # Identify root and tip sections
-    # Root: points at minimum Z
-    root_mask = np.abs(z_vals - z_min) < 0.5  # Within 0.5 ft of root
-    root_pts = winglet_points[root_mask]
-    root_le_idx = np.argmin(root_pts[:, 0])  # Min X = LE
-    root_te_idx = np.argmax(root_pts[:, 0])  # Max X = TE
-    root_le = root_pts[root_le_idx]
-    root_te = root_pts[root_te_idx]
+    # Separate upper winglet (Z > z_mid) and lower winglet (Z < z_mid)
+    upper_mask = z_vals > z_mid
+    lower_mask = z_vals < z_mid
+
+    upper_pts = winglet_points[upper_mask]
+    lower_pts = winglet_points[lower_mask]
+
+    # UPPER WINGLET
+    # Root: points at minimum Z in upper section (attachment level)
+    z_upper_min = np.min(upper_pts[:, 2])
+    z_upper_max = np.max(upper_pts[:, 2])
+
+    upper_root_mask = np.abs(upper_pts[:, 2] - z_upper_min) < 0.3
+    upper_root_pts = upper_pts[upper_root_mask]
+    upper_root_le_idx = np.argmin(upper_root_pts[:, 0])
+    upper_root_te_idx = np.argmax(upper_root_pts[:, 0])
+    upper_root_le = upper_root_pts[upper_root_le_idx]
+    upper_root_te = upper_root_pts[upper_root_te_idx]
 
     # Tip: points at maximum Z
-    tip_mask = np.abs(z_vals - z_max) < 0.5
-    tip_pts = winglet_points[tip_mask]
-    tip_le_idx = np.argmin(tip_pts[:, 0])
-    tip_te_idx = np.argmax(tip_pts[:, 0])
-    tip_le = tip_pts[tip_le_idx]
-    tip_te = tip_pts[tip_te_idx]
+    upper_tip_mask = np.abs(upper_pts[:, 2] - z_upper_max) < 0.3
+    upper_tip_pts = upper_pts[upper_tip_mask]
+    upper_tip_le_idx = np.argmin(upper_tip_pts[:, 0])
+    upper_tip_te_idx = np.argmax(upper_tip_pts[:, 0])
+    upper_tip_le = upper_tip_pts[upper_tip_le_idx]
+    upper_tip_te = upper_tip_pts[upper_tip_te_idx]
 
-    # Compute chords
-    root_chord = np.linalg.norm(root_te - root_le)
-    tip_chord = np.linalg.norm(tip_te - tip_le)
+    upper_root_chord = np.linalg.norm(upper_root_te - upper_root_le)
+    upper_tip_chord = np.linalg.norm(upper_tip_te - upper_tip_le)
+    upper_height = z_upper_max - z_upper_min
 
-    # Height (winglet span in Z direction)
-    height = z_max - z_min
-
-    # Cant angle: winglet tilt in Y-Z plane
-    # Positive cant means tip is further outboard (larger |Y|) than root
-    dy = np.abs(np.mean(tip_pts[:, 1])) - np.abs(np.mean(root_pts[:, 1]))
-    dz = height
-    if dz > 0.01:
-        cant_angle = np.degrees(np.arctan(dy / dz))
+    # Upper cant angle
+    dy_upper = np.abs(np.mean(upper_tip_pts[:, 1])) - np.abs(np.mean(upper_root_pts[:, 1]))
+    dz_upper = upper_height
+    if dz_upper > 0.01:
+        upper_cant_angle = np.degrees(np.arctan(dy_upper / dz_upper))
     else:
-        cant_angle = 0.0
+        upper_cant_angle = 0.0
 
-    # LE sweep angle in X-Z plane
-    dx = tip_le[0] - root_le[0]
-    if dz > 0.01:
-        sweep_le = np.degrees(np.arctan(dx / dz))
+    # Upper LE sweep
+    dx_upper = upper_tip_le[0] - upper_root_le[0]
+    if dz_upper > 0.01:
+        upper_sweep_le = np.degrees(np.arctan(dx_upper / dz_upper))
     else:
-        sweep_le = 0.0
+        upper_sweep_le = 0.0
+
+    # LOWER WINGLET
+    # Root: points at maximum Z in lower section (attachment level)
+    z_lower_min = np.min(lower_pts[:, 2])
+    z_lower_max = np.max(lower_pts[:, 2])
+
+    lower_root_mask = np.abs(lower_pts[:, 2] - z_lower_max) < 0.3
+    lower_root_pts = lower_pts[lower_root_mask]
+    lower_root_le_idx = np.argmin(lower_root_pts[:, 0])
+    lower_root_te_idx = np.argmax(lower_root_pts[:, 0])
+    lower_root_le = lower_root_pts[lower_root_le_idx]
+    lower_root_te = lower_root_pts[lower_root_te_idx]
+
+    # Tip: points at minimum Z
+    lower_tip_mask = np.abs(lower_pts[:, 2] - z_lower_min) < 0.3
+    lower_tip_pts = lower_pts[lower_tip_mask]
+    lower_tip_le_idx = np.argmin(lower_tip_pts[:, 0])
+    lower_tip_te_idx = np.argmax(lower_tip_pts[:, 0])
+    lower_tip_le = lower_tip_pts[lower_tip_le_idx]
+    lower_tip_te = lower_tip_pts[lower_tip_te_idx]
+
+    lower_root_chord = np.linalg.norm(lower_root_te - lower_root_le)
+    lower_tip_chord = np.linalg.norm(lower_tip_te - lower_tip_le)
+    lower_height = z_lower_max - z_lower_min
+
+    # Lower cant angle
+    dy_lower = np.abs(np.mean(lower_tip_pts[:, 1])) - np.abs(np.mean(lower_root_pts[:, 1]))
+    dz_lower = lower_height
+    if dz_lower > 0.01:
+        lower_cant_angle = np.degrees(np.arctan(dy_lower / dz_lower))
+    else:
+        lower_cant_angle = 0.0
+
+    # Lower LE sweep
+    dx_lower = lower_tip_le[0] - lower_root_le[0]
+    if dz_lower > 0.01:
+        lower_sweep_le = np.degrees(np.arctan(dx_lower / dz_lower))
+    else:
+        lower_sweep_le = 0.0
+
+    # Attachment Z is the average of upper root and lower root
+    attach_z = (upper_root_le[2] + lower_root_le[2]) / 2.0
 
     return WingletGeometry(
         points=winglet_points,
-        root_le=root_le,
-        root_te=root_te,
-        tip_le=tip_le,
-        tip_te=tip_te,
-        root_chord=root_chord,
-        tip_chord=tip_chord,
-        height=height,
-        cant_angle=cant_angle,
-        sweep_le=sweep_le,
-        attach_y=attach_y
+        upper_root_le=upper_root_le,
+        upper_root_te=upper_root_te,
+        upper_tip_le=upper_tip_le,
+        upper_tip_te=upper_tip_te,
+        lower_root_le=lower_root_le,
+        lower_root_te=lower_root_te,
+        lower_tip_le=lower_tip_le,
+        lower_tip_te=lower_tip_te,
+        upper_root_chord=upper_root_chord,
+        upper_tip_chord=upper_tip_chord,
+        upper_height=upper_height,
+        lower_root_chord=lower_root_chord,
+        lower_tip_chord=lower_tip_chord,
+        lower_height=lower_height,
+        upper_cant_angle=upper_cant_angle,
+        lower_cant_angle=lower_cant_angle,
+        upper_sweep_le=upper_sweep_le,
+        lower_sweep_le=lower_sweep_le,
+        attach_y=attach_y,
+        attach_z=attach_z
     )
 
 
@@ -501,14 +570,24 @@ if __name__ == "__main__":
         winglet = compute_winglet_geometry(winglet_points, wing)
 
         print("\n" + "=" * 60)
-        print("WINGLET GEOMETRY")
+        print("SPLIT WINGLET GEOMETRY")
         print("=" * 60)
-        print(f"Root Chord:        {winglet.root_chord:8.3f} ft")
-        print(f"Tip Chord:         {winglet.tip_chord:8.3f} ft")
-        print(f"Height:            {winglet.height:8.3f} ft")
-        print(f"Cant Angle:        {winglet.cant_angle:8.2f} deg")
-        print(f"LE Sweep:          {winglet.sweep_le:8.2f} deg")
-        print(f"Attach Y:          {winglet.attach_y:8.3f} ft")
+        print(f"Attachment Y:      {winglet.attach_y:8.3f} ft")
+        print(f"Attachment Z:      {winglet.attach_z:8.3f} ft")
+        print()
+        print("UPPER WINGLET:")
+        print(f"  Root Chord:      {winglet.upper_root_chord:8.3f} ft")
+        print(f"  Tip Chord:       {winglet.upper_tip_chord:8.3f} ft")
+        print(f"  Height:          {winglet.upper_height:8.3f} ft")
+        print(f"  Cant Angle:      {winglet.upper_cant_angle:8.2f} deg")
+        print(f"  LE Sweep:        {winglet.upper_sweep_le:8.2f} deg")
+        print()
+        print("LOWER WINGLET:")
+        print(f"  Root Chord:      {winglet.lower_root_chord:8.3f} ft")
+        print(f"  Tip Chord:       {winglet.lower_tip_chord:8.3f} ft")
+        print(f"  Height:          {winglet.lower_height:8.3f} ft")
+        print(f"  Cant Angle:      {winglet.lower_cant_angle:8.2f} deg")
+        print(f"  LE Sweep:        {winglet.lower_sweep_le:8.2f} deg")
         print("=" * 60)
 
     # Read and compute elevon geometry

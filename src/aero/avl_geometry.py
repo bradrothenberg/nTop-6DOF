@@ -296,79 +296,122 @@ class AVLGeometryWriter:
 
         self.surfaces.append(surface)
 
-    def add_winglet_from_geometry(self, winglet: 'WingletGeometry', airfoil: str = "NACA 0012",
-                                  elevon_hinge: float = 0.75, has_elevon: bool = True,
-                                  side: str = "right", name: str = "Winglet"):
+    def add_split_winglets_from_geometry(self, winglet: 'WingletGeometry', airfoil: str = "NACA 0012",
+                                        elevon_hinge: float = 0.75, has_elevon: bool = True,
+                                        side: str = "right"):
         """
-        Add winglet surface from WingletGeometry object.
+        Add upper and lower winglet surfaces from WingletGeometry object.
+
+        Creates two separate surfaces for split winglet configuration.
 
         Parameters:
         -----------
         winglet : WingletGeometry
-            Winglet geometric properties
+            Split winglet geometric properties
         airfoil : str
             Airfoil designation
         elevon_hinge : float
             Elevon hinge line as fraction of chord
         has_elevon : bool
-            Whether this winglet section has elevon control
+            Whether winglet sections have elevon control
         side : str
             "right" or "left" winglet
-        name : str
-            Surface name
         """
-        # Winglets are vertical surfaces extending in Z
-        # Need to create sections at different Z stations
+        # UPPER WINGLET
+        if winglet.upper_height > 0.01:  # Only create if non-trivial height
+            upper_sections = []
+            n_sections = 2  # Root and tip for upper winglet
 
-        # Create 3 sections: root, mid, tip
-        n_sections = 3
-        z_stations = np.linspace(winglet.root_le[2], winglet.tip_le[2], n_sections)
+            for i in range(n_sections):
+                t = i / (n_sections - 1) if n_sections > 1 else 0
 
-        sections = []
+                # Interpolate between root and tip
+                x_le = winglet.upper_root_le[0] + t * (winglet.upper_tip_le[0] - winglet.upper_root_le[0])
+                y_le = winglet.upper_root_le[1] + t * (winglet.upper_tip_le[1] - winglet.upper_root_le[1])
+                z_le = winglet.upper_root_le[2] + t * (winglet.upper_tip_le[2] - winglet.upper_root_le[2])
+                chord = winglet.upper_root_chord + t * (winglet.upper_tip_chord - winglet.upper_root_chord)
 
-        for z in z_stations:
-            # Interpolate X, Y, chord at this Z station
-            t = (z - winglet.root_le[2]) / (winglet.tip_le[2] - winglet.root_le[2]) if winglet.height > 0.01 else 0
+                section = {
+                    'x_le': x_le,
+                    'y_le': y_le if side == "right" else -y_le,
+                    'z_le': z_le,
+                    'chord': chord,
+                    'ainc': 0.0,
+                    'airfoil': airfoil,
+                    'controls': []
+                }
 
-            # Linear interpolation between root and tip
-            x_le = winglet.root_le[0] + t * (winglet.tip_le[0] - winglet.root_le[0])
-            y_le = winglet.root_le[1] + t * (winglet.tip_le[1] - winglet.root_le[1])
-            chord = winglet.root_chord + t * (winglet.tip_chord - winglet.root_chord)
+                # Add elevon control to tip section
+                if has_elevon and t > 0.4:
+                    section['controls'].append({
+                        'name': 'elevon',
+                        'gain': 1.0,
+                        'xhinge': elevon_hinge,
+                        'hinge_vec': [0, 0, 0],
+                        'sign_dup': -1.0
+                    })
 
-            section = {
-                'x_le': x_le,
-                'y_le': y_le if side == "right" else -y_le,  # Mirror for left winglet
-                'z_le': z,
-                'chord': chord,
-                'ainc': 0.0,
-                'airfoil': airfoil,
-                'controls': []
+                upper_sections.append(section)
+
+            upper_surface = {
+                'name': f"Winglet_Upper_{side.capitalize()}",
+                'n_chord': 8,
+                'c_space': 1.0,
+                'n_span': 6,
+                's_space': 1.0,
+                'component': 4 if side == "right" else 5,
+                'y_duplicate': None,
+                'sections': upper_sections
             }
+            self.surfaces.append(upper_surface)
 
-            # Add elevon control to outer sections
-            if has_elevon and t > 0.3:  # Elevon on outer 70% of winglet
-                section['controls'].append({
-                    'name': 'elevon',
-                    'gain': 1.0,
-                    'xhinge': elevon_hinge,
-                    'hinge_vec': [0, 0, 0],
-                    'sign_dup': -1.0  # Antisymmetric for roll control
-                })
+        # LOWER WINGLET
+        if winglet.lower_height > 0.01:  # Only create if non-trivial height
+            lower_sections = []
+            n_sections = 3  # Root, mid, tip for lower winglet
 
-            sections.append(section)
+            for i in range(n_sections):
+                t = i / (n_sections - 1) if n_sections > 1 else 0
 
-        surface = {
-            'name': name,
-            'n_chord': 8,
-            'c_space': 1.0,
-            'n_span': 8,  # Spanwise panels along winglet height
-            's_space': 1.0,
-            'component': 4 if side == "right" else 5,  # Separate components
-            'y_duplicate': None,  # No duplication - explicit left/right
-            'sections': sections
-        }
+                # Interpolate between root and tip (note: root is at max Z, tip at min Z)
+                x_le = winglet.lower_root_le[0] + t * (winglet.lower_tip_le[0] - winglet.lower_root_le[0])
+                y_le = winglet.lower_root_le[1] + t * (winglet.lower_tip_le[1] - winglet.lower_root_le[1])
+                z_le = winglet.lower_root_le[2] + t * (winglet.lower_tip_le[2] - winglet.lower_root_le[2])
+                chord = winglet.lower_root_chord + t * (winglet.lower_tip_chord - winglet.lower_root_chord)
 
-        self.surfaces.append(surface)
+                section = {
+                    'x_le': x_le,
+                    'y_le': y_le if side == "right" else -y_le,
+                    'z_le': z_le,
+                    'chord': chord,
+                    'ainc': 0.0,
+                    'airfoil': airfoil,
+                    'controls': []
+                }
+
+                # Add elevon control to outer sections
+                if has_elevon and t > 0.3:
+                    section['controls'].append({
+                        'name': 'elevon',
+                        'gain': 1.0,
+                        'xhinge': elevon_hinge,
+                        'hinge_vec': [0, 0, 0],
+                        'sign_dup': -1.0
+                    })
+
+                lower_sections.append(section)
+
+            lower_surface = {
+                'name': f"Winglet_Lower_{side.capitalize()}",
+                'n_chord': 8,
+                'c_space': 1.0,
+                'n_span': 6,
+                's_space': 1.0,
+                'component': 6 if side == "right" else 7,
+                'y_duplicate': None,
+                'sections': lower_sections
+            }
+            self.surfaces.append(lower_surface)
 
     def write_avl_file(self, filepath: str):
         """

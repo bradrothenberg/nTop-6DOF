@@ -91,13 +91,21 @@ def main():
     print(f"  c/4 Sweep:         {wing.sweep_c4:8.2f} deg")
     print(f"  Dihedral:          {wing.dihedral:8.2f} deg")
 
-    print("\nWINGLET:")
-    print(f"  Height:            {winglet.height:8.3f} ft")
-    print(f"  Root Chord:        {winglet.root_chord:8.3f} ft")
-    print(f"  Tip Chord:         {winglet.tip_chord:8.3f} ft")
-    print(f"  Cant Angle:        {winglet.cant_angle:8.2f} deg")
-    print(f"  LE Sweep:          {winglet.sweep_le:8.2f} deg")
+    print("\nSPLIT WINGLETS:")
     print(f"  Attach Y:          {winglet.attach_y:8.3f} ft")
+    print(f"  Attach Z:          {winglet.attach_z:8.3f} ft")
+    print(f"\n  UPPER WINGLET:")
+    print(f"    Height:          {winglet.upper_height:8.3f} ft")
+    print(f"    Root Chord:      {winglet.upper_root_chord:8.3f} ft")
+    print(f"    Tip Chord:       {winglet.upper_tip_chord:8.3f} ft")
+    print(f"    Cant Angle:      {winglet.upper_cant_angle:8.2f} deg")
+    print(f"    LE Sweep:        {winglet.upper_sweep_le:8.2f} deg")
+    print(f"\n  LOWER WINGLET:")
+    print(f"    Height:          {winglet.lower_height:8.3f} ft")
+    print(f"    Root Chord:      {winglet.lower_root_chord:8.3f} ft")
+    print(f"    Tip Chord:       {winglet.lower_tip_chord:8.3f} ft")
+    print(f"    Cant Angle:      {winglet.lower_cant_angle:8.2f} deg")
+    print(f"    LE Sweep:        {winglet.lower_sweep_le:8.2f} deg")
 
     print("\nELEVON:")
     print(f"  Y Inboard:         {elevon.y_inboard:8.3f} ft")
@@ -139,24 +147,22 @@ def main():
         name="Wing"
     )
 
-    # Add winglets (left and right)
-    print("Adding winglet surfaces...")
-    avl_writer.add_winglet_from_geometry(
+    # Add split winglets (upper and lower, left and right)
+    print("Adding split winglet surfaces...")
+    avl_writer.add_split_winglets_from_geometry(
         winglet,
         airfoil="NACA 0012",
         elevon_hinge=0.75,
         has_elevon=True,
-        side="right",
-        name="Winglet_Right"
+        side="right"
     )
 
-    avl_writer.add_winglet_from_geometry(
+    avl_writer.add_split_winglets_from_geometry(
         winglet,
         airfoil="NACA 0012",
         elevon_hinge=0.75,
         has_elevon=True,
-        side="left",
-        name="Winglet_Left"
+        side="left"
     )
 
     # Write AVL file
