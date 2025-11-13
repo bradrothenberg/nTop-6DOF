@@ -298,11 +298,12 @@ class AVLGeometryWriter:
 
     def add_split_winglets_from_geometry(self, winglet: 'WingletGeometry', airfoil: str = "NACA 0012",
                                         elevon_hinge: float = 0.75, has_elevon: bool = True,
-                                        side: str = "right"):
+                                        use_yduplicate: bool = True):
         """
         Add upper and lower winglet surfaces from WingletGeometry object.
 
         Creates two separate surfaces for split winglet configuration.
+        Uses YDUPLICATE for perfect symmetry about XZ plane.
 
         Parameters:
         -----------
@@ -314,8 +315,8 @@ class AVLGeometryWriter:
             Elevon hinge line as fraction of chord
         has_elevon : bool
             Whether winglet sections have elevon control
-        side : str
-            "right" or "left" winglet
+        use_yduplicate : bool
+            If True, only create right side and use YDUPLICATE (default True)
         """
         # UPPER WINGLET
         if winglet.upper_height > 0.01:  # Only create if non-trivial height
@@ -325,7 +326,7 @@ class AVLGeometryWriter:
             for i in range(n_sections):
                 t = i / (n_sections - 1) if n_sections > 1 else 0
 
-                # Interpolate between root and tip
+                # Interpolate between root and tip (only right side)
                 x_le = winglet.upper_root_le[0] + t * (winglet.upper_tip_le[0] - winglet.upper_root_le[0])
                 y_le = winglet.upper_root_le[1] + t * (winglet.upper_tip_le[1] - winglet.upper_root_le[1])
                 z_le = winglet.upper_root_le[2] + t * (winglet.upper_tip_le[2] - winglet.upper_root_le[2])
@@ -333,7 +334,7 @@ class AVLGeometryWriter:
 
                 section = {
                     'x_le': x_le,
-                    'y_le': y_le if side == "right" else -y_le,
+                    'y_le': y_le,
                     'z_le': z_le,
                     'chord': chord,
                     'ainc': 0.0,
@@ -353,14 +354,17 @@ class AVLGeometryWriter:
 
                 upper_sections.append(section)
 
+            # Get next component number
+            next_component = max([s['component'] for s in self.surfaces], default=0) + 1
+
             upper_surface = {
-                'name': f"Winglet_Upper_{side.capitalize()}",
+                'name': "Winglet_Upper",
                 'n_chord': 8,
                 'c_space': 1.0,
-                'n_span': 6,
+                'n_span': 12,  # Increased for better resolution
                 's_space': 1.0,
-                'component': 4 if side == "right" else 5,
-                'y_duplicate': None,
+                'component': next_component,
+                'y_duplicate': 0.0 if use_yduplicate else None,
                 'sections': upper_sections
             }
             self.surfaces.append(upper_surface)
@@ -381,7 +385,7 @@ class AVLGeometryWriter:
 
                 section = {
                     'x_le': x_le,
-                    'y_le': y_le if side == "right" else -y_le,
+                    'y_le': y_le,
                     'z_le': z_le,
                     'chord': chord,
                     'ainc': 0.0,
@@ -401,14 +405,17 @@ class AVLGeometryWriter:
 
                 lower_sections.append(section)
 
+            # Get next component number
+            next_component = max([s['component'] for s in self.surfaces], default=0) + 1
+
             lower_surface = {
-                'name': f"Winglet_Lower_{side.capitalize()}",
+                'name': "Winglet_Lower",
                 'n_chord': 8,
                 'c_space': 1.0,
-                'n_span': 6,
+                'n_span': 12,  # Increased for better resolution
                 's_space': 1.0,
-                'component': 6 if side == "right" else 7,
-                'y_duplicate': None,
+                'component': next_component,
+                'y_duplicate': 0.0 if use_yduplicate else None,
                 'sections': lower_sections
             }
             self.surfaces.append(lower_surface)

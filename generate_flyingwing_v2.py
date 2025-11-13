@@ -125,12 +125,13 @@ def main():
     avl_writer = AVLGeometryWriter(name="nTop_FlyingWing_V2")
 
     # Set reference values
+    # Note: Yref must be 0.0 for perfect symmetry in AVL analysis
     avl_writer.set_reference_values(
         s_ref=wing.area,
         c_ref=wing.mac,
         b_ref=wing.span,
         x_ref=mass_props.cg_ft[0],
-        y_ref=mass_props.cg_ft[1],
+        y_ref=0.0,  # Force to 0.0 for perfect symmetry
         z_ref=mass_props.cg_ft[2]
     )
 
@@ -147,22 +148,15 @@ def main():
         name="Wing"
     )
 
-    # Add split winglets (upper and lower, left and right)
+    # Add split winglets (upper and lower)
+    # Uses YDUPLICATE for perfect symmetry
     print("Adding split winglet surfaces...")
     avl_writer.add_split_winglets_from_geometry(
         winglet,
         airfoil="NACA 0012",
         elevon_hinge=0.75,
         has_elevon=True,
-        side="right"
-    )
-
-    avl_writer.add_split_winglets_from_geometry(
-        winglet,
-        airfoil="NACA 0012",
-        elevon_hinge=0.75,
-        has_elevon=True,
-        side="left"
+        use_yduplicate=True
     )
 
     # Write AVL file
