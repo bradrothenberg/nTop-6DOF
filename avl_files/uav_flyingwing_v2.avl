@@ -4,9 +4,9 @@ nTop_FlyingWing_V2
 #IYsym   IZsym   Zsym
  0      0       0.0
 #Sref    Cref    Bref
-    52.0702     11.5395     11.9836
+    26.0351     11.5395      5.9918
 #Xref    Yref    Zref
-     3.6635      0.0020      0.2476
+     3.6635      0.0000      0.2476
 #CDp (optional)
     0.00000
 #
