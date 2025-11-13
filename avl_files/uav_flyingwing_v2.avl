@@ -69,6 +69,36 @@ CONTROL
 
 #============================================================
 SURFACE
+Winglet_Upper_Right
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+   8         1.00       6        1.00
+#
+COMPONENT
+ 4
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   6.7817   5.9753   0.3777   1.2157   0.00
+#
+AFIL
+ NACA 0012
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   7.9484   6.2717   1.4840   0.7225   0.00
+#
+AFIL
+ NACA 0012
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ elevon    1.000   0.750   0.0  0.0  0.0   -1.00
+#
+
+#============================================================
+SURFACE
 Winglet_Lower_Right
 #Nchordwise  Cspace  [Nspanwise  Sspace]
    8         1.00       6        1.00
@@ -100,6 +130,36 @@ CONTROL
 SECTION
 #Xle     Yle      Zle      Chord    Ainc
    7.2817   5.8404  -0.1258   1.0043   0.00
+#
+AFIL
+ NACA 0012
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ elevon    1.000   0.750   0.0  0.0  0.0   -1.00
+#
+
+#============================================================
+SURFACE
+Winglet_Upper_Left
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+   8         1.00       6        1.00
+#
+COMPONENT
+ 5
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   6.7817  -5.9753   0.3777   1.2157   0.00
+#
+AFIL
+ NACA 0012
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   7.9484  -6.2717   1.4840   0.7225   0.00
 #
 AFIL
  NACA 0012

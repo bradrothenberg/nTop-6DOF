@@ -333,15 +333,24 @@ def print_geometry_summary(wing: WingGeometry, h_tail: Dict = None, v_tail: Dict
 
 def compute_winglet_geometry(winglet_points: np.ndarray, wing: WingGeometry) -> WingletGeometry:
     """
-    Compute split winglet geometric properties from point cloud.
+    Compute split winglet geometric properties from clockwise loop of points.
 
-    The winglet points define upper and lower winglet surfaces that extend
-    vertically (in Z) both above and below the wing tip attachment point.
+    The winglet points form a closed clockwise loop defining both upper and
+    lower winglet surfaces that extend vertically above and below the wing tip.
+
+    Expected loop structure:
+    - Start at attachment LE (bottom of upper winglet)
+    - Go up to upper tip LE
+    - Across to upper tip TE
+    - Down to attachment TE (top of lower winglet)
+    - Down to lower tip TE
+    - Across to lower tip LE
+    - Back up to start
 
     Parameters:
     -----------
     winglet_points : np.ndarray
-        Winglet boundary points (N x 3) in feet
+        Winglet boundary points (N x 3) in feet, forming closed loop
     wing : WingGeometry
         Main wing geometry for attachment point reference
 
@@ -351,105 +360,94 @@ def compute_winglet_geometry(winglet_points: np.ndarray, wing: WingGeometry) -> 
         Container with upper and lower winglet properties
     """
 
-    # Winglet extends in Z direction (vertically above and below wing)
     z_vals = winglet_points[:, 2]
-    y_vals = winglet_points[:, 1]
 
-    # Find attachment point (middle Z values)
+    # Find key Z positions
     z_min = np.min(z_vals)
     z_max = np.max(z_vals)
+
+    # Find attachment level (points in middle Z range)
     z_mid = (z_min + z_max) / 2.0
+    attachment_tol = 0.15  # Points within this range are attachment
+    attach_mask = np.abs(z_vals - z_mid) < attachment_tol
 
-    # Attachment Y location (average Y coordinate)
-    attach_y = np.mean(y_vals)
-
-    # Separate upper winglet (Z > z_mid) and lower winglet (Z < z_mid)
-    upper_mask = z_vals > z_mid
-    lower_mask = z_vals < z_mid
-
-    upper_pts = winglet_points[upper_mask]
-    lower_pts = winglet_points[lower_mask]
+    # Attachment Y location
+    attach_y = np.mean(winglet_points[:, 1])
+    attach_z = z_mid
 
     # UPPER WINGLET
-    # Root: points at minimum Z in upper section (attachment level)
-    z_upper_min = np.min(upper_pts[:, 2])
-    z_upper_max = np.max(upper_pts[:, 2])
+    # Find upper tip (max Z) - should be 2 points (LE and TE)
+    upper_tip_mask = np.abs(z_vals - z_max) < 0.05
+    upper_tip_pts = winglet_points[upper_tip_mask]
 
-    upper_root_mask = np.abs(upper_pts[:, 2] - z_upper_min) < 0.3
-    upper_root_pts = upper_pts[upper_root_mask]
-    upper_root_le_idx = np.argmin(upper_root_pts[:, 0])
-    upper_root_te_idx = np.argmax(upper_root_pts[:, 0])
-    upper_root_le = upper_root_pts[upper_root_le_idx]
-    upper_root_te = upper_root_pts[upper_root_te_idx]
+    if len(upper_tip_pts) >= 2:
+        # Sort by X to get LE (min X) and TE (max X)
+        sort_idx = np.argsort(upper_tip_pts[:, 0])
+        upper_tip_le = upper_tip_pts[sort_idx[0]]
+        upper_tip_te = upper_tip_pts[sort_idx[-1]]
+    else:
+        # Fallback if only one point
+        upper_tip_le = upper_tip_pts[0] if len(upper_tip_pts) > 0 else winglet_points[np.argmax(z_vals)]
+        upper_tip_te = upper_tip_le
 
-    # Tip: points at maximum Z
-    upper_tip_mask = np.abs(upper_pts[:, 2] - z_upper_max) < 0.3
-    upper_tip_pts = upper_pts[upper_tip_mask]
-    upper_tip_le_idx = np.argmin(upper_tip_pts[:, 0])
-    upper_tip_te_idx = np.argmax(upper_tip_pts[:, 0])
-    upper_tip_le = upper_tip_pts[upper_tip_le_idx]
-    upper_tip_te = upper_tip_pts[upper_tip_te_idx]
+    # Find upper root (attachment level points on upper side)
+    # Look for points near attachment Z with appropriate X coords
+    upper_root_candidates = winglet_points[attach_mask]
+    if len(upper_root_candidates) >= 2:
+        sort_idx = np.argsort(upper_root_candidates[:, 0])
+        upper_root_le = upper_root_candidates[sort_idx[0]]
+        upper_root_te = upper_root_candidates[sort_idx[-1]]
+    else:
+        # Use points closest to attachment Z
+        upper_root_le = winglet_points[0]
+        upper_root_te = winglet_points[3]
 
     upper_root_chord = np.linalg.norm(upper_root_te - upper_root_le)
     upper_tip_chord = np.linalg.norm(upper_tip_te - upper_tip_le)
-    upper_height = z_upper_max - z_upper_min
+    upper_height = z_max - z_mid
 
-    # Upper cant angle
-    dy_upper = np.abs(np.mean(upper_tip_pts[:, 1])) - np.abs(np.mean(upper_root_pts[:, 1]))
-    dz_upper = upper_height
-    if dz_upper > 0.01:
-        upper_cant_angle = np.degrees(np.arctan(dy_upper / dz_upper))
+    # Upper cant and sweep
+    dy_upper = np.abs(np.mean(upper_tip_pts[:, 1])) - np.abs(attach_y)
+    if upper_height > 0.01:
+        upper_cant_angle = np.degrees(np.arctan(dy_upper / upper_height))
+        dx_upper = upper_tip_le[0] - upper_root_le[0]
+        upper_sweep_le = np.degrees(np.arctan(dx_upper / upper_height))
     else:
         upper_cant_angle = 0.0
-
-    # Upper LE sweep
-    dx_upper = upper_tip_le[0] - upper_root_le[0]
-    if dz_upper > 0.01:
-        upper_sweep_le = np.degrees(np.arctan(dx_upper / dz_upper))
-    else:
         upper_sweep_le = 0.0
 
     # LOWER WINGLET
-    # Root: points at maximum Z in lower section (attachment level)
-    z_lower_min = np.min(lower_pts[:, 2])
-    z_lower_max = np.max(lower_pts[:, 2])
+    # Find lower tip (min Z) - should be 2 points (LE and TE)
+    lower_tip_mask = np.abs(z_vals - z_min) < 0.05
+    lower_tip_pts = winglet_points[lower_tip_mask]
 
-    lower_root_mask = np.abs(lower_pts[:, 2] - z_lower_max) < 0.3
-    lower_root_pts = lower_pts[lower_root_mask]
-    lower_root_le_idx = np.argmin(lower_root_pts[:, 0])
-    lower_root_te_idx = np.argmax(lower_root_pts[:, 0])
-    lower_root_le = lower_root_pts[lower_root_le_idx]
-    lower_root_te = lower_root_pts[lower_root_te_idx]
+    if len(lower_tip_pts) >= 2:
+        # Sort by X to get TE (max X) and LE (min X)
+        sort_idx = np.argsort(lower_tip_pts[:, 0])
+        lower_tip_le = lower_tip_pts[sort_idx[0]]
+        lower_tip_te = lower_tip_pts[sort_idx[-1]]
+    else:
+        # Fallback
+        lower_tip_le = lower_tip_pts[0] if len(lower_tip_pts) > 0 else winglet_points[np.argmin(z_vals)]
+        lower_tip_te = lower_tip_le
 
-    # Tip: points at minimum Z
-    lower_tip_mask = np.abs(lower_pts[:, 2] - z_lower_min) < 0.3
-    lower_tip_pts = lower_pts[lower_tip_mask]
-    lower_tip_le_idx = np.argmin(lower_tip_pts[:, 0])
-    lower_tip_te_idx = np.argmax(lower_tip_pts[:, 0])
-    lower_tip_le = lower_tip_pts[lower_tip_le_idx]
-    lower_tip_te = lower_tip_pts[lower_tip_te_idx]
+    # Lower root = attachment level (same as upper root essentially)
+    lower_root_le = upper_root_le  # They share attachment
+    lower_root_te = upper_root_te
 
     lower_root_chord = np.linalg.norm(lower_root_te - lower_root_le)
     lower_tip_chord = np.linalg.norm(lower_tip_te - lower_tip_le)
-    lower_height = z_lower_max - z_lower_min
+    lower_height = z_mid - z_min
 
-    # Lower cant angle
-    dy_lower = np.abs(np.mean(lower_tip_pts[:, 1])) - np.abs(np.mean(lower_root_pts[:, 1]))
-    dz_lower = lower_height
-    if dz_lower > 0.01:
-        lower_cant_angle = np.degrees(np.arctan(dy_lower / dz_lower))
+    # Lower cant and sweep
+    dy_lower = np.abs(np.mean(lower_tip_pts[:, 1])) - np.abs(attach_y)
+    if lower_height > 0.01:
+        lower_cant_angle = np.degrees(np.arctan(dy_lower / lower_height))
+        dx_lower = lower_tip_le[0] - lower_root_le[0]
+        lower_sweep_le = np.degrees(np.arctan(dx_lower / lower_height))
     else:
         lower_cant_angle = 0.0
-
-    # Lower LE sweep
-    dx_lower = lower_tip_le[0] - lower_root_le[0]
-    if dz_lower > 0.01:
-        lower_sweep_le = np.degrees(np.arctan(dx_lower / dz_lower))
-    else:
         lower_sweep_le = 0.0
-
-    # Attachment Z is the average of upper root and lower root
-    attach_z = (upper_root_le[2] + lower_root_le[2]) / 2.0
 
     return WingletGeometry(
         points=winglet_points,
