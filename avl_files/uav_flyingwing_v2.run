@@ -1,0 +1,57 @@
+ Run case  Cruise_M025_20kft:
+
+ alpha        ->  alpha       =     0.00000
+ beta         ->  beta        =     0.00000
+ pb/2V        ->  pb/2V       =     0.00000
+ qc/2V        ->  qc/2V       =     0.00000
+ rb/2V        ->  rb/2V       =     0.00000
+
+ velocity     =     259.170  ft/s
+ density      =    0.00126653  slugs/ft^3
+ grav.acc.    =    32.17400  ft/s^2
+ mass         =    16.27753  slugs
+ Ixx          =      753.5815  slug-ft^2
+ Iyy          =     1910.1048  slug-ft^2
+ Izz          =     2641.3974  slug-ft^2
+ Izx          =        0.0000  slug-ft^2
+
+ ----------------------------------------------------------------------
+
+ Run case  Climb_M020_10kft:
+
+ alpha        ->  alpha       =     5.00000
+ beta         ->  beta        =     0.00000
+ pb/2V        ->  pb/2V       =     0.00000
+ qc/2V        ->  qc/2V       =     0.00000
+ rb/2V        ->  rb/2V       =     0.00000
+
+ velocity     =     215.442  ft/s
+ density      =    0.00175565  slugs/ft^3
+ grav.acc.    =    32.17400  ft/s^2
+ mass         =    16.27753  slugs
+ Ixx          =      753.5815  slug-ft^2
+ Iyy          =     1910.1048  slug-ft^2
+ Izz          =     2641.3974  slug-ft^2
+ Izx          =        0.0000  slug-ft^2
+
+ ----------------------------------------------------------------------
+
+ Run case  Landing_M015_SL:
+
+ alpha        ->  alpha       =     8.00000
+ beta         ->  beta        =     0.00000
+ pb/2V        ->  pb/2V       =     0.00000
+ qc/2V        ->  qc/2V       =     0.00000
+ rb/2V        ->  rb/2V       =     0.00000
+
+ velocity     =     167.440  ft/s
+ density      =    0.00237767  slugs/ft^3
+ grav.acc.    =    32.17400  ft/s^2
+ mass         =    16.27753  slugs
+ Ixx          =      753.5815  slug-ft^2
+ Iyy          =     1910.1048  slug-ft^2
+ Izz          =     2641.3974  slug-ft^2
+ Izx          =        0.0000  slug-ft^2
+
+ ----------------------------------------------------------------------
+
