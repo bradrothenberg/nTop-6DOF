@@ -1,0 +1,147 @@
+nTop_FlyingWing_V2
+#Mach
+    0.000
+#IYsym   IZsym   Zsym
+ 0      0       0.0
+#Sref    Cref    Bref
+    26.0351     11.5395      5.9918
+#Xref    Yref    Zref
+     3.6635      0.0000      0.2476
+#CDp (optional)
+    0.00000
+#
+#============================================================
+SURFACE
+Wing
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+  12         1.00      20        1.00
+#
+COMPONENT
+ 1
+#
+YDUPLICATE
+     0.0000
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+  -0.3864   0.0000   0.0000   8.2197   0.00
+#
+AFIL
+ NACA 2412
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   0.1043   0.6658   0.0349   8.1432   0.00
+#
+AFIL
+ NACA 2412
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   1.1575   1.3315   0.0698   6.3374   0.00
+#
+AFIL
+ NACA 2412
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   2.1339   1.9973   0.1047   4.8054   0.00
+#
+AFIL
+ NACA 2412
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   6.7724   5.9918   0.3140   1.2323   0.00
+#
+AFIL
+ NACA 2412
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ flaperon  1.000   0.678   0.0  0.0  0.0   -1.00
+#
+
+#============================================================
+SURFACE
+Winglet_Upper
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+   8         1.00      12        1.00
+#
+COMPONENT
+ 2
+#
+YDUPLICATE
+     0.0000
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   6.7724   5.9918   0.3140   1.2323   0.00
+#
+AFIL
+ NACA 0012
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   7.9484   6.2717   1.4840   0.7225   0.00
+#
+AFIL
+ NACA 0012
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ elevon    1.000   0.750   0.0  0.0  0.0   -1.00
+#
+
+#============================================================
+SURFACE
+Winglet_Lower
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+   8         1.00      12        1.00
+#
+COMPONENT
+ 3
+#
+YDUPLICATE
+     0.0000
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   6.7724   5.9918   0.3140   1.2323   0.00
+#
+AFIL
+ NACA 0012
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   7.0271   5.9161   0.0941   1.1183   0.00
+#
+AFIL
+ NACA 0012
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ elevon    1.000   0.750   0.0  0.0  0.0   -1.00
+#
+#-----------------
+SECTION
+#Xle     Yle      Zle      Chord    Ainc
+   7.2817   5.8404  -0.1258   1.0043   0.00
+#
+AFIL
+ NACA 0012
+#
+CONTROL
+#name     gain    Xhinge  XYZhvec  SgnDup
+ elevon    1.000   0.750   0.0  0.0  0.0   -1.00
+#
+

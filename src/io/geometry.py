@@ -32,6 +32,42 @@ class WingGeometry:
     dihedral: float        # Dihedral angle in degrees
 
 
+@dataclass
+class WingletGeometry:
+    """Container for winglet geometric properties."""
+    points: np.ndarray     # All winglet points (N x 3) in feet
+    upper_root_le: np.ndarray    # Upper root leading edge position (3,) in feet
+    upper_root_te: np.ndarray    # Upper root trailing edge position (3,) in feet
+    upper_tip_le: np.ndarray     # Upper tip leading edge position (3,) in feet
+    upper_tip_te: np.ndarray     # Upper tip trailing edge position (3,) in feet
+    lower_root_le: np.ndarray    # Lower root leading edge position (3,) in feet
+    lower_root_te: np.ndarray    # Lower root trailing edge position (3,) in feet
+    lower_tip_le: np.ndarray     # Lower tip leading edge position (3,) in feet
+    lower_tip_te: np.ndarray     # Lower tip trailing edge position (3,) in feet
+    upper_root_chord: float      # Upper winglet root chord in feet
+    upper_tip_chord: float       # Upper winglet tip chord in feet
+    upper_height: float          # Upper winglet height (span) in feet
+    lower_root_chord: float      # Lower winglet root chord in feet
+    lower_tip_chord: float       # Lower winglet tip chord in feet
+    lower_height: float          # Lower winglet height (span) in feet
+    upper_cant_angle: float      # Upper winglet cant angle in degrees
+    lower_cant_angle: float      # Lower winglet cant angle in degrees
+    upper_sweep_le: float        # Upper winglet LE sweep in degrees
+    lower_sweep_le: float        # Lower winglet LE sweep in degrees
+    attach_y: float              # Attachment Y station on main wing in feet
+    attach_z: float              # Attachment Z position on main wing in feet
+
+
+@dataclass
+class ElevonGeometry:
+    """Container for elevon control surface geometry."""
+    points: np.ndarray     # Elevon boundary points (4 x 3) in feet
+    y_inboard: float       # Inboard span station in feet
+    y_outboard: float      # Outboard span station in feet
+    hinge_line_x: callable # Function: y -> x position of hinge line
+    chord_fraction: float  # Average hinge position as fraction of chord
+
+
 def read_csv_points(filepath: str, units: str = 'inches') -> np.ndarray:
     """
     Read LE or TE points from CSV file.
@@ -295,18 +331,273 @@ def print_geometry_summary(wing: WingGeometry, h_tail: Dict = None, v_tail: Dict
     print("=" * 60)
 
 
+def compute_winglet_geometry(winglet_points: np.ndarray, wing: WingGeometry) -> WingletGeometry:
+    """
+    Compute split winglet geometric properties from clockwise loop of points.
+
+    The winglet points form a closed clockwise loop defining both upper and
+    lower winglet surfaces that extend vertically above and below the wing tip.
+
+    Expected loop structure:
+    - Start at attachment LE (bottom of upper winglet)
+    - Go up to upper tip LE
+    - Across to upper tip TE
+    - Down to attachment TE (top of lower winglet)
+    - Down to lower tip TE
+    - Across to lower tip LE
+    - Back up to start
+
+    Parameters:
+    -----------
+    winglet_points : np.ndarray
+        Winglet boundary points (N x 3) in feet, forming closed loop
+    wing : WingGeometry
+        Main wing geometry for attachment point reference
+
+    Returns:
+    --------
+    geom : WingletGeometry
+        Container with upper and lower winglet properties
+    """
+
+    z_vals = winglet_points[:, 2]
+
+    # Find key Z positions
+    z_min = np.min(z_vals)
+    z_max = np.max(z_vals)
+
+    # Find attachment level (points in middle Z range)
+    z_mid = (z_min + z_max) / 2.0
+    attachment_tol = 0.15  # Points within this range are attachment
+    attach_mask = np.abs(z_vals - z_mid) < attachment_tol
+
+    # Attachment Y location
+    attach_y = np.mean(winglet_points[:, 1])
+    attach_z = z_mid
+
+    # UPPER WINGLET
+    # Find upper tip (max Z) - should be 2 points (LE and TE)
+    upper_tip_mask = np.abs(z_vals - z_max) < 0.05
+    upper_tip_pts = winglet_points[upper_tip_mask]
+
+    if len(upper_tip_pts) >= 2:
+        # Sort by X to get LE (min X) and TE (max X)
+        sort_idx = np.argsort(upper_tip_pts[:, 0])
+        upper_tip_le = upper_tip_pts[sort_idx[0]]
+        upper_tip_te = upper_tip_pts[sort_idx[-1]]
+    else:
+        # Fallback if only one point
+        upper_tip_le = upper_tip_pts[0] if len(upper_tip_pts) > 0 else winglet_points[np.argmax(z_vals)]
+        upper_tip_te = upper_tip_le
+
+    # Find upper root (attachment level points on upper side)
+    # Look for points near attachment Z with appropriate X coords
+    upper_root_candidates = winglet_points[attach_mask]
+    if len(upper_root_candidates) >= 2:
+        sort_idx = np.argsort(upper_root_candidates[:, 0])
+        upper_root_le = upper_root_candidates[sort_idx[0]]
+        upper_root_te = upper_root_candidates[sort_idx[-1]]
+    else:
+        # Use points closest to attachment Z
+        upper_root_le = winglet_points[0]
+        upper_root_te = winglet_points[3]
+
+    upper_root_chord = np.linalg.norm(upper_root_te - upper_root_le)
+    upper_tip_chord = np.linalg.norm(upper_tip_te - upper_tip_le)
+    upper_height = z_max - z_mid
+
+    # Upper cant and sweep
+    dy_upper = np.abs(np.mean(upper_tip_pts[:, 1])) - np.abs(attach_y)
+    if upper_height > 0.01:
+        upper_cant_angle = np.degrees(np.arctan(dy_upper / upper_height))
+        dx_upper = upper_tip_le[0] - upper_root_le[0]
+        upper_sweep_le = np.degrees(np.arctan(dx_upper / upper_height))
+    else:
+        upper_cant_angle = 0.0
+        upper_sweep_le = 0.0
+
+    # LOWER WINGLET
+    # Find lower tip (min Z) - should be 2 points (LE and TE)
+    lower_tip_mask = np.abs(z_vals - z_min) < 0.05
+    lower_tip_pts = winglet_points[lower_tip_mask]
+
+    if len(lower_tip_pts) >= 2:
+        # Sort by X to get TE (max X) and LE (min X)
+        sort_idx = np.argsort(lower_tip_pts[:, 0])
+        lower_tip_le = lower_tip_pts[sort_idx[0]]
+        lower_tip_te = lower_tip_pts[sort_idx[-1]]
+    else:
+        # Fallback
+        lower_tip_le = lower_tip_pts[0] if len(lower_tip_pts) > 0 else winglet_points[np.argmin(z_vals)]
+        lower_tip_te = lower_tip_le
+
+    # Lower root = attachment level (same as upper root essentially)
+    lower_root_le = upper_root_le  # They share attachment
+    lower_root_te = upper_root_te
+
+    lower_root_chord = np.linalg.norm(lower_root_te - lower_root_le)
+    lower_tip_chord = np.linalg.norm(lower_tip_te - lower_tip_le)
+    lower_height = z_mid - z_min
+
+    # Lower cant and sweep
+    dy_lower = np.abs(np.mean(lower_tip_pts[:, 1])) - np.abs(attach_y)
+    if lower_height > 0.01:
+        lower_cant_angle = np.degrees(np.arctan(dy_lower / lower_height))
+        dx_lower = lower_tip_le[0] - lower_root_le[0]
+        lower_sweep_le = np.degrees(np.arctan(dx_lower / lower_height))
+    else:
+        lower_cant_angle = 0.0
+        lower_sweep_le = 0.0
+
+    return WingletGeometry(
+        points=winglet_points,
+        upper_root_le=upper_root_le,
+        upper_root_te=upper_root_te,
+        upper_tip_le=upper_tip_le,
+        upper_tip_te=upper_tip_te,
+        lower_root_le=lower_root_le,
+        lower_root_te=lower_root_te,
+        lower_tip_le=lower_tip_le,
+        lower_tip_te=lower_tip_te,
+        upper_root_chord=upper_root_chord,
+        upper_tip_chord=upper_tip_chord,
+        upper_height=upper_height,
+        lower_root_chord=lower_root_chord,
+        lower_tip_chord=lower_tip_chord,
+        lower_height=lower_height,
+        upper_cant_angle=upper_cant_angle,
+        lower_cant_angle=lower_cant_angle,
+        upper_sweep_le=upper_sweep_le,
+        lower_sweep_le=lower_sweep_le,
+        attach_y=attach_y,
+        attach_z=attach_z
+    )
+
+
+def compute_elevon_geometry(elevon_points: np.ndarray, wing: WingGeometry) -> ElevonGeometry:
+    """
+    Compute elevon control surface boundaries from corner points.
+
+    The elevon points define the quadrilateral control surface boundary.
+    Typically 4 corners: inboard LE, inboard TE, outboard TE, outboard LE.
+
+    Parameters:
+    -----------
+    elevon_points : np.ndarray
+        Elevon boundary points (4 x 3) in feet
+    wing : WingGeometry
+        Main wing geometry for chord reference
+
+    Returns:
+    --------
+    geom : ElevonGeometry
+        Container with elevon properties
+    """
+
+    # Identify inboard/outboard stations (min/max Y)
+    y_vals = elevon_points[:, 1]
+    y_inboard = np.min(y_vals)
+    y_outboard = np.max(y_vals)
+
+    # Find LE and TE points at inboard and outboard
+    inboard_mask = np.abs(y_vals - y_inboard) < 0.1
+    outboard_mask = np.abs(y_vals - y_outboard) < 0.1
+
+    inboard_pts = elevon_points[inboard_mask]
+    outboard_pts = elevon_points[outboard_mask]
+
+    # LE is min X, TE is max X
+    inboard_le_x = np.min(inboard_pts[:, 0])
+    inboard_te_x = np.max(inboard_pts[:, 0])
+    outboard_le_x = np.min(outboard_pts[:, 0])
+    outboard_te_x = np.max(outboard_pts[:, 0])
+
+    # Hinge line is the LE of the elevon (leading edge of control surface)
+    # Create linear interpolation function: y -> x
+    hinge_y = np.array([y_inboard, y_outboard])
+    hinge_x = np.array([inboard_le_x, outboard_le_x])
+
+    # Polynomial fit (linear)
+    hinge_poly = np.poly1d(np.polyfit(hinge_y, hinge_x, 1))
+    hinge_line_x = lambda y: hinge_poly(y)
+
+    # Compute average chord fraction
+    # Interpolate wing LE and TE at elevon stations
+    wing_le_x_inboard = np.interp(y_inboard, wing.le_points[:, 1], wing.le_points[:, 0])
+    wing_te_x_inboard = np.interp(y_inboard, wing.te_points[:, 1], wing.te_points[:, 0])
+    wing_le_x_outboard = np.interp(y_outboard, wing.le_points[:, 1], wing.le_points[:, 0])
+    wing_te_x_outboard = np.interp(y_outboard, wing.te_points[:, 1], wing.te_points[:, 0])
+
+    chord_inboard = wing_te_x_inboard - wing_le_x_inboard
+    chord_outboard = wing_te_x_outboard - wing_le_x_outboard
+
+    # Hinge as fraction of chord
+    hinge_frac_inboard = (inboard_le_x - wing_le_x_inboard) / chord_inboard
+    hinge_frac_outboard = (outboard_le_x - wing_le_x_outboard) / chord_outboard
+    chord_fraction = (hinge_frac_inboard + hinge_frac_outboard) / 2.0
+
+    return ElevonGeometry(
+        points=elevon_points,
+        y_inboard=y_inboard,
+        y_outboard=y_outboard,
+        hinge_line_x=hinge_line_x,
+        chord_fraction=chord_fraction
+    )
+
+
 if __name__ == "__main__":
     # Test with current geometry
     import os
 
-    base_path = r"C:\Users\bradrothenberg\OneDrive - nTop\OUT\parts\nTopAVL\nTop6DOF\Data"
+    base_path = r"C:\Users\bradrothenberg\OneDrive - nTop\OUT\parts\nTopAVL\nTop6DOF\DATA"
     le_file = os.path.join(base_path, "LEpts.csv")
     te_file = os.path.join(base_path, "TEpts.csv")
+    winglet_file = os.path.join(base_path, "WINGLETpts.csv")
+    elevon_file = os.path.join(base_path, "ELEVONpts.csv")
 
+    # Read and compute wing geometry
     le_points = read_csv_points(le_file, units='inches')
     te_points = read_csv_points(te_file, units='inches')
-
     wing = compute_wing_geometry(le_points, te_points)
-    h_tail, v_tail = estimate_tail_geometry(wing)
 
-    print_geometry_summary(wing, h_tail, v_tail)
+    print_geometry_summary(wing)
+
+    # Read and compute winglet geometry
+    if os.path.exists(winglet_file):
+        winglet_points = read_csv_points(winglet_file, units='inches')
+        winglet = compute_winglet_geometry(winglet_points, wing)
+
+        print("\n" + "=" * 60)
+        print("SPLIT WINGLET GEOMETRY")
+        print("=" * 60)
+        print(f"Attachment Y:      {winglet.attach_y:8.3f} ft")
+        print(f"Attachment Z:      {winglet.attach_z:8.3f} ft")
+        print()
+        print("UPPER WINGLET:")
+        print(f"  Root Chord:      {winglet.upper_root_chord:8.3f} ft")
+        print(f"  Tip Chord:       {winglet.upper_tip_chord:8.3f} ft")
+        print(f"  Height:          {winglet.upper_height:8.3f} ft")
+        print(f"  Cant Angle:      {winglet.upper_cant_angle:8.2f} deg")
+        print(f"  LE Sweep:        {winglet.upper_sweep_le:8.2f} deg")
+        print()
+        print("LOWER WINGLET:")
+        print(f"  Root Chord:      {winglet.lower_root_chord:8.3f} ft")
+        print(f"  Tip Chord:       {winglet.lower_tip_chord:8.3f} ft")
+        print(f"  Height:          {winglet.lower_height:8.3f} ft")
+        print(f"  Cant Angle:      {winglet.lower_cant_angle:8.2f} deg")
+        print(f"  LE Sweep:        {winglet.lower_sweep_le:8.2f} deg")
+        print("=" * 60)
+
+    # Read and compute elevon geometry
+    if os.path.exists(elevon_file):
+        elevon_points = read_csv_points(elevon_file, units='inches')
+        elevon = compute_elevon_geometry(elevon_points, wing)
+
+        print("\n" + "=" * 60)
+        print("ELEVON GEOMETRY")
+        print("=" * 60)
+        print(f"Y Inboard:         {elevon.y_inboard:8.3f} ft")
+        print(f"Y Outboard:        {elevon.y_outboard:8.3f} ft")
+        print(f"Span Coverage:     {elevon.y_outboard - elevon.y_inboard:8.3f} ft")
+        print(f"Hinge Chord Frac:  {elevon.chord_fraction:8.3f}")
+        print("=" * 60)
